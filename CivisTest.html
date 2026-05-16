@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U.S. Civics Test Quiz</title>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-hover: #5a6fd8;
+            --secondary-color: #6c757d;
+            --secondary-hover: #545b62;
+            --success-color: #28a745;
+            --success-hover: #218838;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --dark-text: #333;
+            --medium-text: #666;
+            --border-color: #ddd;
+            --white: #ffffff;
+            --grad-start: #667eea;
+            --grad-end: #764ba2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            color: var(--dark-text);
+        }
+
+        .quiz-container {
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--dark-text); font-size: 2em; margin-bottom: 10px; font-weight: 700; }
+        .header p { color: var(--medium-text); font-size: 1.1em; line-height: 1.5; }
+        .quiz-content { display: none; }
+        .quiz-content.active { display: block; }
+        .question-container { margin-bottom: 30px; position: relative; }
+        .speaker-btn {
+            position: absolute; top: 0; right: 0; background: none; border: none;
+            font-size: 1.8rem; cursor: pointer; color: var(--medium-text);
+            transition: color 0.3s; padding: 5px; line-height: 1;
+        }
+        .speaker-btn:hover { color: var(--primary-color); }
+        .question-number {
+            background: var(--primary-color); color: var(--white); padding: 5px 15px;
+            border-radius: 20px; font-size: 0.9em; font-weight: 700;
+            display: inline-block; margin-bottom: 15px;
+        }
+        .question {
+            font-size: 1.3em; color: var(--dark-text); line-height: 1.5;
+            margin-bottom: 20px; padding-right: 40px; font-weight: 500;
+        }
+        .answer-input-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .answer-input {
+            flex-grow: 1; padding: 15px; font-size: 1.1em;
+            border: 2px solid var(--border-color); border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        .answer-input:focus { outline: none; border-color: var(--primary-color); }
+        .answer-input.shake { animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .mic-btn {
+            padding: 12px 25px; font-size: 1em; font-weight: 700; border: none;
+            border-radius: 8px; cursor: pointer; transition: all 0.3s;
+            background: var(--secondary-color); color: var(--white); display: flex;
+            align-items: center; justify-content: center; gap: 8px;
+        }
+        .mic-btn:hover { background: var(--secondary-hover); }
+        .mic-btn.listening { background: var(--danger-color); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .speech-status { font-size: 0.9em; color: var(--medium-text); height: 1.2em; margin-bottom: 20px; text-align: center; }
+        .buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+        .btn { padding: 12px 25px; font-size: 1em; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: 700; text-align: center; }
+        .btn-primary { background: var(--primary-color); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-secondary { background: var(--secondary-color); color: var(--white); }
+        .btn-secondary:hover { background: var(--secondary-hover); transform: translateY(-2px); }
+        .btn-success { background: var(--success-color); color: var(--white); }
+        .btn-success:hover { background: var(--success-hover); transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .start-screen { text-align: center; }
+        .start-screen h2 { color: var(--dark-text); margin-bottom: 20px; font-size: 1.8em; font-weight: 600; }
+        .start-screen p { color: var(--medium-text); margin-bottom: 30px; line-height: 1.6; }
+        .flashcard-answer-box { display: none; margin-top: 20px; padding: 15px; border-radius: 8px; background: #d4edda; color: #155724; border: 2px dashed #155724; font-size: 1.1em; line-height: 1.6; }
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 1.1em; }
+        .feedback.correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .feedback.incorrect { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .correct-answer { margin-top: 10px; font-style: italic; color: #28a745; }
+        .results-screen { text-align: center; }
+        .results-screen h2 { color: var(--dark-text); margin-bottom: 20px; font-size: 2em; font-weight: 600; }
+        .score { font-size: 3em; font-weight: 700; color: var(--primary-color); margin-bottom: 20px; }
+        .score-details { font-size: 1.2em; color: var(--medium-text); margin-bottom: 30px; }
+        .progress-bar { background: #e9ecef; border-radius: 10px; height: 20px; margin-bottom: 20px; overflow: hidden; width: 100%; }
+        .progress-fill { background: var(--primary-color); height: 100%; border-radius: 10px; transition: width 0.3s ease; }
+        .list-disc { list-style-type: disc; }
+        .list-inside { list-style-position: inside; }
+        .ml-4 { margin-left: 1rem; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .gap-4 { gap: 1rem; }
+        .w-full { width: 100%; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+        @media (min-width: 640px) {
+            .quiz-container { padding: 40px; margin-top: 0; }
+            .header h1 { font-size: 2.5em; }
+            .sm\:flex-row { flex-direction: row; }
+            .sm\:w-auto { width: auto; }
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="header">
+            <h1>U.S. Civics Test Quiz</h1>
+            <p>Test your knowledge. The question will be read aloud. You can type or speak your answer!</p>
+        </div>
+
+        <div id="start-screen" class="start-screen quiz-content active">
+            <h2>Welcome to the U.S. Civics Test!</h2>
+            <p>This quiz contains 100 questions about American history, government, and civics. Choose your study method below.</p>
+            <div class="buttons flex flex-col sm:flex-row gap-4">
+                <button class="btn btn-primary w-full sm:w-auto" onclick="startQuiz('full')">Take Full Quiz (100 Questions)</button>
+                <button class="btn btn-secondary w-full sm:w-auto" onclick="startQuiz('practice')">Practice Mode (10 Random Questions)</button>
+                <button class="btn btn-success w-full sm:w-auto" onclick="startFlashcards()">📚 Flashcard Mode</button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="quiz-content">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="question-container">
+                <button class="speaker-btn" id="speaker-btn" title="Read question aloud">🔊</button>
+                <span class="question-number" id="question-number">Question 1 of 100</span>
+                <div class="question" id="question-text">Loading question...</div>
+                <div class="answer-input-container">
+                    <input type="text" class="answer-input" id="answer-input" placeholder="Type or speak your answer..." autocomplete="off">
+                    <button class="mic-btn" id="mic-btn" title="Touch to answer with voice">🎤 Touch to Speak</button>
+                </div>
+                <div class="speech-status" id="speech-status"></div>
+                <div class="feedback" id="feedback" style="display: none;"></div>
+            </div>
+            <div class="buttons flex flex-col sm:flex-row gap-4">
+                <button class="btn btn-primary w-full sm:w-auto" id="submit-btn" onclick="submitTypedAnswer()">Check Typed Answer</button>
+                <button class="btn btn-secondary w-full sm:w-auto" id="next-btn" onclick="nextQuestion()" style="display: none;">Next Question</button>
+                <button class="btn btn-secondary w-full sm:w-auto" onclick="goHome()">Back to Start</button>
+            </div>
+        </div>
+
+        <div id="flashcard-screen" class="quiz-content">
+            <div class="progress-bar"><div class="progress-fill" id="flashcard-progress-fill"></div></div>
+            <div class="question-container">
+                <button class="speaker-btn" id="flashcard-speaker-btn" title="Read question aloud">🔊</button>
+                <span class="question-number" id="flashcard-number">Card 1 of 100</span>
+                <div class="question" id="flashcard-question">Loading question...</div>
+                <div id="flashcard-answer" class="flashcard-answer-box"></div>
+            </div>
+            <div class="buttons flex flex-col sm:flex-row gap-4">
+                <button class="btn btn-primary w-full sm:w-auto" id="flip-btn" onclick="flipCard()">Flip Card</button>
+                <button class="btn btn-secondary w-full sm:w-auto" id="next-flashcard-btn" onclick="nextFlashcard()" style="display: none;">Next Card</button>
+                <button class="btn btn-secondary w-full sm:w-auto" onclick="goHome()">Back to Start</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="quiz-content results-screen">
+            <h2>Quiz Complete! 🎉</h2>
+            <div class="score" id="final-score">0%</div>
+            <div class="score-details" id="score-details">You got 0 out of 0 questions correct!</div>
+            <div class="buttons flex flex-col sm:flex-row gap-4">
+                <button class="btn btn-success w-full sm:w-auto" onclick="startQuiz('full')">Retake Full Quiz</button>
+                <button class="btn btn-primary w-full sm:w-auto" onclick="startQuiz('practice')">Practice Again</button>
+                <button class="btn btn-secondary w-full sm:w-auto" onclick="goHome()">Back to Start</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { question: "What is the supreme law of the land?", answers: ["the Constitution", "Constitution"] },
+            { question: "What does the Constitution do?", answers: ["sets up the government", "defines the government", "protects basic rights of Americans", "sets up government", "defines government", "protects basic rights", "protects rights"] },
+            { question: "The idea of self-government is in the first three words of the Constitution. What are these words?", answers: ["We the People"] },
+            { question: "What is an amendment?", answers: ["a change to the Constitution", "an addition to the Constitution", "a change", "an addition", "change to the Constitution", "addition to the Constitution"] },
+            { question: "What do we call the first ten amendments to the Constitution?", answers: ["the Bill of Rights", "Bill of Rights"] },
+            { question: "What is one right or freedom from the First Amendment?", answers: ["speech", "religion", "assembly", "press", "petition the government", "freedom of speech", "freedom of religion", "freedom of assembly", "freedom of press", "freedom to petition"] },
+            { question: "How many amendments does the Constitution have?", answers: ["twenty-seven", "27", "twenty seven"] },
+            { question: "What did the Declaration of Independence do?", answers: ["announced our independence from Great Britain", "declared our independence from Great Britain", "said that the United States is free from Great Britain", "announced independence", "declared independence"] },
+            { question: "What are two rights in the Declaration of Independence?", answers: ["life", "liberty", "pursuit of happiness", "life and liberty", "liberty and pursuit of happiness", "life and pursuit of happiness"] },
+            { question: "What is freedom of religion?", answers: ["You can practice any religion, or not practice a religion", "practice any religion", "not practice religion", "religious freedom"] },
+            { question: "What is the economic system in the United States?", answers: ["capitalist economy", "market economy", "capitalism", "free market"] },
+            { question: "What is the \"rule of law\"?", answers: ["Everyone must follow the law", "Leaders must obey the law", "Government must obey the law", "No one is above the law", "everyone follows the law", "no one above the law"] },
+            { question: "Name one branch or part of the government.", answers: ["Congress", "legislative", "President", "executive", "the courts", "judicial", "courts"] },
+            { question: "What stops one branch of government from becoming too powerful?", answers: ["checks and balances", "separation of powers"] },
+            { question: "Who is in charge of the executive branch?", answers: ["the President", "President"] },
+            { question: "Who makes federal laws?", answers: ["Congress", "Senate and House of Representatives", "legislature", "Senate and House"] },
+            { question: "What are the two parts of the U.S. Congress?", answers: ["the Senate and House of Representatives", "Senate and House of Representatives", "Senate and House"] },
+            { question: "How many U.S. Senators are there?", answers: ["one hundred", "100", "one hundred senators"] },
+            { question: "We elect a U.S. Senator for how many years?", answers: ["six", "6", "six years"] },
+            { question: "The House of Representatives has how many voting members?", answers: ["four hundred thirty-five", "435", "four hundred thirty five"] },
+            { question: "We elect a U.S. Representative for how many years?", answers: ["two", "2", "two years"] },
+            { question: "Who does a U.S. Senator represent?", answers: ["all people of the state", "people of the state", "the state"] },
+            { question: "Why do some states have more Representatives than other states?", answers: ["because of the state's population", "because they have more people", "because some states have more people", "population", "more people"] },
+            { question: "We elect a President for how many years?", answers: ["four", "4", "four years"] },
+            { question: "In what month do we vote for President?", answers: ["November"] },
+            { question: "If the President can no longer serve, who becomes President?", answers: ["the Vice President", "Vice President"] },
+            { question: "If both the President and the Vice President can no longer serve, who becomes President?", answers: ["the Speaker of the House", "Speaker of the House"] },
+            { question: "Who is the Commander in Chief of the military?", answers: ["the President", "President"] },
+            { question: "Who signs bills to become laws?", answers: ["the President", "President"] },
+            { question: "Who vetoes bills?", answers: ["the President", "President"] },
+            { question: "What does the President's Cabinet do?", answers: ["advises the President", "advise the President"] },
+            { question: "What are two Cabinet-level positions?", answers: ["Secretary of State", "Secretary of Defense", "Secretary of Treasury", "Attorney General", "Vice President", "Secretary of Agriculture", "Secretary of Commerce", "Secretary of Education", "Secretary of Veterans Affairs", "Secretary of Homeland Security", "Secretary of Labor", "Secretary of Energy"] },
+            { question: "What does the judicial branch do?", answers: ["reviews laws", "explains laws", "resolves disputes", "decides if a law goes against the Constitution", "interprets laws"] },
+            { question: "What is the highest court in the United States?", answers: ["the Supreme Court", "Supreme Court"] },
+            { question: "How many justices are on the Supreme Court?", answers: ["nine", "9", "nine justices"] },
+            { question: "Under our Constitution, some powers belong to the federal government. What is one power of the federal government?", answers: ["to print money", "to declare war", "to create an army", "to make treaties", "print money", "declare war", "create army", "make treaties"] },
+            { question: "Under our Constitution, some powers belong to the states. What is one power of the states?", answers: ["provide schooling and education", "provide protection", "provide safety", "give a driver's license", "approve zoning and land use", "education", "police", "fire departments", "driver's license"] },
+            { question: "What are the two major political parties in the United States?", answers: ["Democratic and Republican", "Democrat and Republican", "Democratic Party and Republican Party"] },
+            { question: "There are four amendments to the Constitution about who can vote. Describe one of them.", answers: ["Citizens eighteen and older can vote", "You don't have to pay a poll tax to vote", "Any citizen can vote", "A male citizen of any race can vote", "18 and older", "no poll tax", "women can vote", "men can vote"] },
+            { question: "What is one responsibility that is only for United States citizens?", answers: ["serve on a jury", "vote in a federal election", "jury duty", "vote"] },
+            { question: "Name one right only for United States citizens.", answers: ["vote in a federal election", "run for federal office", "vote", "run for office"] },
+            { question: "What are two rights of everyone living in the United States?", answers: ["freedom of expression", "freedom of speech", "freedom of assembly", "freedom to petition the government", "freedom of religion", "the right to bear arms"] },
+            { question: "What do we show loyalty to when we say the Pledge of Allegiance?", answers: ["the United States", "the flag", "United States", "flag"] },
+            { question: "What is one promise you make when you become a United States citizen?", answers: ["give up loyalty to other countries", "defend the Constitution and laws of the United States", "obey the laws of the United States", "serve in the U.S. military if needed", "be loyal to the United States"] },
+            { question: "How old do citizens have to be to vote for President?", answers: ["eighteen and older", "18 and older", "eighteen", "18"] },
+            { question: "What are two ways that Americans can participate in their democracy?", answers: ["vote", "join a political party", "help with a campaign", "join a civic group", "run for office", "write to a newspaper", "call Senators and Representatives"] },
+            { question: "When is the last day you can send in federal income tax forms?", answers: ["April 15", "April fifteenth"] },
+            { question: "When must all men register for the Selective Service?", answers: ["at age eighteen", "between eighteen and twenty-six", "at 18", "between 18 and 26"] },
+            { question: "What is one reason colonists came to America?", answers: ["freedom", "political liberty", "religious freedom", "economic opportunity", "practice their religion", "escape persecution"] },
+            { question: "Who lived in America before the Europeans arrived?", answers: ["American Indians", "Native Americans", "Indians"] },
+            { question: "What group of people was taken to America and sold as slaves?", answers: ["Africans", "people from Africa", "African people"] },
+            { question: "Why did the colonists fight the British?", answers: ["because of high taxes", "taxation without representation", "because the British army stayed in their houses", "because they didn't have self-government", "high taxes", "no representation"] },
+            { question: "Who wrote the Declaration of Independence?", answers: ["Thomas Jefferson", "Jefferson"] },
+            { question: "When was the Declaration of Independence adopted?", answers: ["July 4, 1776", "July 4 1776", "July fourth 1776"] },
+            { question: "There were 13 original states. Name three.", answers: ["New Hampshire", "Massachusetts", "Rhode Island", "Connecticut", "New York", "New Jersey", "Pennsylvania", "Delaware", "Maryland", "Virginia", "North Carolina", "South Carolina", "Georgia"] },
+            { question: "What happened at the Constitutional Convention?", answers: ["The Constitution was written", "The Founding Fathers wrote the Constitution", "Constitution was written", "wrote the Constitution"] },
+            { question: "When was the Constitution written?", answers: ["1787"] },
+            { question: "The Federalist Papers supported the passage of the U.S. Constitution. Name one of the writers.", answers: ["James Madison", "Alexander Hamilton", "John Jay", "Publius", "Madison", "Hamilton", "Jay"] },
+            { question: "What is one thing Benjamin Franklin is famous for?", answers: ["U.S. diplomat", "oldest member of the Constitutional Convention", "first Postmaster General", "writer of Poor Richard's Almanac", "started the first free libraries"] },
+            { question: "Who is the \"Father of Our Country\"?", answers: ["George Washington", "Washington"] },
+            { question: "Who was the first President?", answers: ["George Washington", "Washington"] },
+            { question: "What territory did the United States buy from France in 1803?", answers: ["the Louisiana Territory", "Louisiana Territory", "Louisiana"] },
+            { question: "Name one war fought by the United States in the 1800s.", answers: ["War of 1812", "Mexican-American War", "Civil War", "Spanish-American War"] },
+            { question: "Name the U.S. war between the North and the South.", answers: ["the Civil War", "Civil War", "the War between the States", "War between the States"] },
+            { question: "Name one problem that led to the Civil War.", answers: ["slavery", "economic reasons", "states' rights", "states rights"] },
+            { question: "What was one important thing that Abraham Lincoln did?", answers: ["freed the slaves", "saved the Union", "preserved the Union", "led the United States during the Civil War", "Emancipation Proclamation"] },
+            { question: "What did the Emancipation Proclamation do?", answers: ["freed the slaves", "freed slaves in the Confederacy", "freed slaves in the Confederate states", "freed slaves in most Southern states"] },
+            { question: "What did Susan B. Anthony do?", answers: ["fought for women's rights", "fought for civil rights", "women's rights", "civil rights"] },
+            { question: "Name one war fought by the United States in the 1900s.", answers: ["World War I", "World War II", "Korean War", "Vietnam War", "Persian Gulf War", "Gulf War", "WWI", "WWII"] },
+            { question: "Who was President during World War I?", answers: ["Woodrow Wilson", "Wilson"] },
+            { question: "Who was President during the Great Depression and World War II?", answers: ["Franklin Roosevelt", "Roosevelt", "FDR", "Franklin D. Roosevelt"] },
+            { question: "Who did the United States fight in World War II?", answers: ["Japan, Germany, and Italy", "Japan Germany Italy", "Axis powers", "Germany Japan Italy"] },
+            { question: "Before he was President, Eisenhower was a general. What war was he in?", answers: ["World War II", "WWII", "World War 2"] },
+            { question: "During the Cold War, what was the main concern of the United States?", answers: ["Communism", "Communist", "Soviet Union", "USSR"] },
+            { question: "What movement tried to end racial discrimination?", answers: ["civil rights movement", "civil rights"] },
+            { question: "What did Martin Luther King, Jr., do?", answers: ["fought for civil rights", "worked for equality for all Americans", "civil rights", "equality"] },
+            { question: "What major event happened on September 11, 2001, in the United States?", answers: ["Terrorists attacked the United States", "terrorist attacks", "9/11", "September 11 attacks", "terrorist attack"] },
+            { question: "Name one American Indian tribe in the United States.", answers: ["Cherokee", "Navajo", "Sioux", "Chippewa", "Choctaw", "Pueblo", "Apache", "Iroquois", "Creek", "Blackfeet", "Seminole", "Cheyenne", "Arawak", "Shawnee", "Mohegan", "Huron", "Oneida", "Lakota", "Crow", "Teton", "Hopi", "Inuit"] },
+            { question: "Name one of the two longest rivers in the United States.", answers: ["Missouri River", "Mississippi River", "Missouri", "Mississippi"] },
+            { question: "What ocean is on the West Coast of the United States?", answers: ["Pacific Ocean", "Pacific"] },
+            { question: "What ocean is on the East Coast of the United States?", answers: ["Atlantic Ocean", "Atlantic"] },
+            { question: "Name one U.S. territory.", answers: ["Puerto Rico", "U.S. Virgin Islands", "American Samoa", "Northern Mariana Islands", "Guam", "Virgin Islands"] },
+            { question: "Name one state that borders Canada.", answers: ["Maine", "New Hampshire", "Vermont", "New York", "Pennsylvania", "Ohio", "Michigan", "Minnesota", "North Dakota", "Montana", "Idaho", "Washington", "Alaska"] },
+            { question: "Name one state that borders Mexico.", answers: ["California", "Arizona", "New Mexico", "Texas"] },
+            { question: "What is the capital of the United States?", answers: ["Washington, D.C.", "Washington DC", "Washington D.C.", "DC"] },
+            { question: "Where is the Statue of Liberty?", answers: ["New York Harbor", "Liberty Island", "New York", "New Jersey"] },
+            { question: "Why does the flag have 13 stripes?", answers: ["because there were 13 original colonies", "because the stripes represent the original colonies", "13 original colonies", "original colonies"] },
+            { question: "Why does the flag have 50 stars?", answers: ["because there is one star for each state", "because each star represents a state", "because there are 50 states", "50 states", "one star for each state"] },
+            { question: "What is the name of the national anthem?", answers: ["The Star-Spangled Banner", "Star-Spangled Banner"] },
+            { question: "When do we celebrate Independence Day?", answers: ["July 4", "July fourth", "4th of July"] },
+            { question: "Name two national U.S. holidays.", answers: ["New Year's Day", "Martin Luther King, Jr. Day", "Presidents' Day", "Memorial Day", "Juneteenth", "Independence Day", "Labor Day", "Columbus Day", "Veterans Day", "Thanksgiving", "Christmas"] }
+        ];
+
+        let currentQuiz = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let quizMode = 'full';
+        let activeSpeechChainId = 0;
+        let voices = [];
+        let selectedVoice = null;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+        } else {
+            console.warn("Speech Recognition not supported in this browser.");
+        }
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const flashcardScreen = document.getElementById('flashcard-screen');
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const answerInput = document.getElementById('answer-input');
+        const micBtn = document.getElementById('mic-btn');
+        const speechStatusEl = document.getElementById('speech-status');
+        const feedbackEl = document.getElementById('feedback');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progressFill = document.getElementById('progress-fill');
+        const speakerBtn = document.getElementById('speaker-btn');
+        const flashcardProgressFill = document.getElementById('flashcard-progress-fill');
+        const flashcardSpeakerBtn = document.getElementById('flashcard-speaker-btn');
+        const flashcardNumberEl = document.getElementById('flashcard-number');
+        const flashcardQuestionEl = document.getElementById('flashcard-question');
+        const flashcardAnswerEl = document.getElementById('flashcard-answer');
+        const flipBtn = document.getElementById('flip-btn');
+        const nextFlashcardBtn = document.getElementById('next-flashcard-btn');
+
+        function init() {
+            showScreen('start-screen');
+            if (recognition === null) {
+                micBtn.disabled = true;
+                micBtn.title = "Voice input not supported in this browser";
+            }
+            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = selectUSVoice;
+            selectUSVoice();
+        }
+
+        function showScreen(screenId) {
+            [startScreen, quizScreen, resultsScreen, flashcardScreen].forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startQuiz(mode) {
+            quizMode = mode;
+            currentQuestionIndex = 0;
+            score = 0;
+            answered = false;
+            currentQuiz = mode === 'full' ? shuffleArray([...quizData]) : getRandomQuestions(10);
+            showScreen('quiz-screen');
+            displayQuestion();
+        }
+
+        function startFlashcards() {
+            quizMode = 'flashcard';
+            currentQuestionIndex = 0;
+            answered = false;
+            currentQuiz = shuffleArray([...quizData]);
+            showScreen('flashcard-screen');
+            displayFlashcard();
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function getRandomQuestions(count) {
+            const shuffled = [...quizData].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        function displayFlashcard() {
+            if (currentQuestionIndex >= currentQuiz.length) { goHome(); return; }
+            const question = currentQuiz[currentQuestionIndex];
+            flashcardNumberEl.textContent = `Card ${currentQuestionIndex + 1} of ${currentQuiz.length}`;
+            flashcardQuestionEl.textContent = question.question;
+            const correctAnswers = question.answers;
+            let answerText = correctAnswers.length === 1 ? correctAnswers[0] : `<ul class="list-disc list-inside ml-4" style="margin:0; padding:0;">` + correctAnswers.map(answer => `<li>${answer}</li>`).join('') + `</ul>`;
+            flashcardAnswerEl.innerHTML = `<strong>Acceptable answer(s):</strong><br>${answerText}`;
+            flashcardAnswerEl.style.display = 'none';
+            answered = false;
+            flipBtn.style.display = 'inline-block';
+            nextFlashcardBtn.style.display = 'none';
+            const progress = ((currentQuestionIndex) / currentQuiz.length) * 100;
+            flashcardProgressFill.style.width = progress + '%';
+            speak(question.question);
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= currentQuiz.length) { showResults(); return; }
+            const question = currentQuiz[currentQuestionIndex];
+            questionNumberEl.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuiz.length}`;
+            questionTextEl.textContent = question.question;
+            answerInput.value = '';
+            feedbackEl.style.display = 'none';
+            submitBtn.style.display = 'inline-block';
+            nextBtn.style.display = 'none';
+            answered = false;
+            setInputsDisabled(false);
+            speechStatusEl.textContent = '';
+            const progress = ((currentQuestionIndex) / currentQuiz.length) * 100;
+            progressFill.style.width = progress + '%';
+            speak(question.question);
+        }
+
+        function flipCard() {
+            if (answered) return;
+            answered = true;
+            flashcardAnswerEl.style.display = 'block';
+            flipBtn.style.display = 'none';
+            nextFlashcardBtn.style.display = 'inline-block';
+            nextFlashcardBtn.focus();
+            const question = currentQuiz[currentQuestionIndex];
+            speakChained(['Acceptable answers are:', ...question.answers]);
+        }
+
+        function nextFlashcard() { speechSynthesis.cancel(); currentQuestionIndex++; displayFlashcard(); }
+
+        function setInputsDisabled(disabled) {
+            answerInput.disabled = disabled;
+            micBtn.disabled = disabled;
+            submitBtn.disabled = disabled;
+            if (recognition === null) micBtn.disabled = true;
+        }
+
+        function startListening() {
+            if (recognition === null || micBtn.disabled) return;
+            try {
+                recognition.start();
+                setInputsDisabled(true);
+                micBtn.disabled = false;
+                micBtn.classList.add('listening');
+                speechStatusEl.textContent = 'Listening...';
+            } catch(e) {
+                console.error("Recognition already started.", e);
+                speechStatusEl.textContent = 'Please wait...';
+            }
+        }
+
+        if (recognition) {
+            recognition.onresult = (event) => { answerInput.value = event.results[0][0].transcript; };
+            recognition.onspeechend = () => { recognition.stop(); };
+            recognition.onend = () => {
+                setInputsDisabled(false);
+                micBtn.classList.remove('listening');
+                speechStatusEl.textContent = 'Voice input finished.';
+            };
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'not-allowed') speechStatusEl.textContent = 'Mic access denied. Please allow it in your browser.';
+                else if (event.error === 'no-speech') speechStatusEl.textContent = 'No speech detected. Please try again.';
+                else speechStatusEl.textContent = `Error: ${event.error}. Please try again.`;
+                setInputsDisabled(false);
+            };
+        }
+
+        function submitTypedAnswer() {
+            if (answered) return;
+            const userAnswer = answerInput.value.trim();
+            if (userAnswer === '') {
+                answerInput.classList.add('shake');
+                setTimeout(() => answerInput.classList.remove('shake'), 500);
+                return;
+            }
+            const question = currentQuiz[currentQuestionIndex];
+            const isCorrect = checkTypedAnswer(userAnswer, question.answers);
+            answered = true;
+            setInputsDisabled(true);
+            if (isCorrect) score++;
+            showFeedback(isCorrect, question.answers);
+            submitBtn.style.display = 'none';
+            if (currentQuestionIndex < currentQuiz.length - 1) {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.focus();
+            } else {
+                setTimeout(showResults, 2000);
+            }
+        }
+
+        function checkTypedAnswer(userAnswer, correctAnswers) {
+            const normalizedUserAnswer = userAnswer.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+            return correctAnswers.some(answer => {
+                const normalizedCorrectAnswer = answer.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+                if (normalizedUserAnswer === normalizedCorrectAnswer) return true;
+                if (normalizedUserAnswer.includes(normalizedCorrectAnswer)) return true;
+                if (normalizedCorrectAnswer.includes(normalizedUserAnswer)) return normalizedUserAnswer.length / normalizedCorrectAnswer.length >= 0.7;
+                return false;
+            });
+        }
+
+        function showFeedback(isCorrect, correctAnswers) {
+            feedbackEl.style.display = 'block';
+            let html = '';
+            let speechQueue = [];
+            if (isCorrect) {
+                feedbackEl.className = 'feedback correct';
+                html += '✅ Correct!';
+                speechQueue.push('Correct.');
+            } else {
+                feedbackEl.className = 'feedback incorrect';
+                html += '❌ Incorrect.';
+                speechQueue.push('Incorrect.');
+            }
+            let answerText = correctAnswers.length === 1 ? correctAnswers[0] : `<ul class="list-disc list-inside ml-4" style="margin:0; padding:0;">` + correctAnswers.map(answer => `<li>${answer}</li>`).join('') + `</ul>`;
+            html += `<div class="correct-answer" style="color: #555; font-style: normal; margin-top: 10px;"><strong>Acceptable answer(s):</strong> ${answerText}</div>`;
+            feedbackEl.innerHTML = html;
+            speechQueue.push('Acceptable answers are:');
+            speechQueue = speechQueue.concat(correctAnswers);
+            speakChained(speechQueue);
+        }
+
+        function nextQuestion() { speechSynthesis.cancel(); currentQuestionIndex++; displayQuestion(); }
+
+        function showResults() {
+            const percentage = Math.round((score / currentQuiz.length) * 100);
+            document.getElementById('final-score').textContent = percentage + '%';
+            document.getElementById('score-details').textContent = `You got ${score} out of ${currentQuiz.length} questions correct!`;
+            showScreen('results-screen');
+        }
+
+        function goHome() { speechSynthesis.cancel(); showScreen('start-screen'); }
+
+        function selectUSVoice() {
+            voices = speechSynthesis.getVoices();
+            selectedVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || voices.find(v => v.lang === 'en-US' && v.name.includes('Samantha')) || voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en'));
+        }
+
+        function speak(text) {
+            if (!text || !window.speechSynthesis) return;
+            speechSynthesis.cancel();
+            activeSpeechChainId++;
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (selectedVoice) utterance.voice = selectedVoice;
+            utterance.pitch = 1;
+            utterance.rate = 1;
+            speechSynthesis.speak(utterance);
+        }
+
+        function speakChained(textArray) {
+            if (!textArray || textArray.length === 0 || !window.speechSynthesis) return;
+            speechSynthesis.cancel();
+            activeSpeechChainId++;
+            const thisChainId = activeSpeechChainId;
+            let index = 0;
+            function speakNext() {
+                if (index >= textArray.length || thisChainId !== activeSpeechChainId) return;
+                const utterance = new SpeechSynthesisUtterance(textArray[index]);
+                if (selectedVoice) utterance.voice = selectedVoice;
+                utterance.pitch = 1;
+                utterance.rate = 1;
+                utterance.onend = () => { if (thisChainId === activeSpeechChainId) { index++; speakNext(); } };
+                utterance.onerror = (e) => { console.error("Speech synthesis error:", e); if (thisChainId === activeSpeechChainId) { index++; speakNext(); } };
+                speechSynthesis.speak(utterance);
+            }
+            speakNext();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            answerInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !answered) { e.preventDefault(); submitTypedAnswer(); }
+                else if (e.key === 'Enter' && answered && currentQuestionIndex < currentQuiz.length - 1) { e.preventDefault(); nextQuestion(); }
+            });
+            speakerBtn.addEventListener('click', () => { if (currentQuiz.length > 0) speak(currentQuiz[currentQuestionIndex].question); });
+            flashcardSpeakerBtn.addEventListener('click', () => { if (currentQuiz.length > 0) speak(currentQuiz[currentQuestionIndex].question); });
+            micBtn.addEventListener('click', startListening);
+            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = selectUSVoice;
+            selectUSVoice();
+            init();
+        });
+    </script>
+</body>
+</html>
