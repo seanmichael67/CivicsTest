@@ -66,6 +66,11 @@ const answerLine = q => q.answers.length === 1
   ? q.answers[0]
   : q.answers.slice(0, 3).join('; ') + (q.answers.length > 3 ? '; and others' : '');
 
+/* Vercel Web Analytics. Cookieless and self-hosted from the same origin, so it
+   needs no consent banner and no third-party request. Served by Vercel only
+   when Web Analytics is enabled on the project; elsewhere it 404s harmlessly. */
+const ANALYTICS = '<script defer src="/_vercel/insights/script.js"></script>';
+
 /* ---------- shared stylesheet (cached across all 128 pages) ---------- */
 const CSS = `:root{--navy:#0f172a;--blue:#1d4ed8;--gold:#f59e0b;--text:#0f172a;--muted:#475569;--line:#dbe3ef;--bg:#f8fafc;--soft:#eff6ff}
 *{box-sizing:border-box}
@@ -116,6 +121,7 @@ function page({ title, description, canonical, body, ld, up }) {
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="${up}assets/q.css">
 ${ld ? `<script type="application/ld+json">${ld}</script>` : ''}
+${ANALYTICS}
 </head>
 <body>
 <header><div class="wrap"><a href="${up}">&larr; USCIS 128 Civics Test practice</a></div></header>
@@ -266,7 +272,9 @@ if (/<link rel="canonical"/.test(appOut)) {
 appOut = appOut.replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${BASE}/">`);
 
 appOut = appOut.replace(/\n?\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/, '');
-appOut = appOut.replace(/(<meta name="theme-color"[^>]*>)/, `$1\n  <script type="application/ld+json">${appLd}</script>`);
+appOut = appOut.replace(/\n?\s*<script defer src="\/_vercel\/insights\/script\.js"><\/script>/, '');
+appOut = appOut.replace(/(<meta name="theme-color"[^>]*>)/,
+  `$1\n  <script type="application/ld+json">${appLd}</script>\n  ${ANALYTICS}`);
 
 if (appOut !== app) {
   fs.writeFileSync(path.join(ROOT, 'index.html'), appOut);

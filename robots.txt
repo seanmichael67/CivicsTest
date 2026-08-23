@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://seanmichael67.github.io/CivicsTest/sitemap.xml
+Sitemap: https://www.uscis128civicstest.com/sitemap.xml
