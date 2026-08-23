@@ -55,6 +55,22 @@
     .feedback { display:none; border-radius:16px; padding:15px; margin-top:14px; line-height:1.5; }
     .feedback.ok { display:block; background:#dcfce7; border:1px solid #86efac; } .feedback.no { display:block; background:#fee2e2; border:1px solid #fecaca; }
     .feedback.info { display:block; background:#eff6ff; border:1px solid #bfdbfe; }
+    .feedback.near { display:block; background:#fef3c7; border:1px solid #fcd34d; }
+    .mic { background:var(--red); color:white; }
+    .mic[disabled] { opacity:.5; cursor:not-allowed; transform:none; }
+    .mic.listening { animation:pulse 1.25s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.55); } 50% { box-shadow:0 0 0 14px rgba(220,38,38,0); } }
+    .voice-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--soft); border:1px solid #bfdbfe; border-radius:16px; padding:12px 14px; margin:10px 0 4px; }
+    .voice-bar label { display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer; }
+    .voice-bar input[type=checkbox] { width:20px; height:20px; accent-color:var(--blue); cursor:pointer; }
+    .voice-note { color:var(--muted); font-size:.9rem; }
+    .heard { display:none; margin:10px 0 0; padding:12px 14px; border-radius:14px; background:#f1f5f9; border:1px solid var(--line); }
+    .heard.show { display:block; }
+    .heard .lbl { font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:800; }
+    .heard .txt { font-size:1.15rem; font-weight:700; margin-top:4px; }
+    .heard .txt.interim { color:var(--muted); font-style:italic; font-weight:600; }
+    .conf { display:inline-block; margin-left:8px; font-size:.85rem; font-weight:800; color:var(--muted); }
+    @media (prefers-reduced-motion:reduce) { .mic.listening { animation:none; } }
     .answer-list { margin:8px 0 0; padding-left:20px; }
     .hidden { display:none !important; }
     .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
@@ -111,7 +127,13 @@
     <div class="question" id="question"></div>
     <div id="answers" class="answers"></div>
     <input id="typed" class="free-input hidden" placeholder="Type your answer here...">
+    <div class="voice-bar" id="voiceBar">
+      <label><input type="checkbox" id="handsFree" onchange="toggleHandsFree()"> 🎙️ Hands-free interview mode</label>
+      <span class="voice-note" id="voiceNote">Question is read aloud, then the mic opens automatically — just like the real oral test.</span>
+    </div>
+    <div id="heard" class="heard"><span class="lbl">I heard you say</span><div class="txt" id="heardTxt"></div></div>
     <div class="toolbar">
+      <button id="micBtn" class="btn mic" onclick="toggleListening()">🎙️ Answer Out Loud</button>
       <button id="checkBtn" class="btn primary" onclick="checkTyped()">Check Typed Answer</button>
       <button class="btn ghost" onclick="speakCurrent()">🔊 Read Question</button>
       <button id="revealBtn" class="btn secondary" onclick="revealAnswer()">Show Answer</button>
@@ -1460,13 +1482,19 @@ function startMode(m){
 }
 function showQuestion(){
   if(idx>=deck.length) return finish();
-  answered=false; const q=deck[idx];
+  stopListening();
+  answered=false; const q=deck[idx]; const thisIdx=idx;
   el('counter').textContent=`${idx+1} / ${deck.length}`; el('bar').style.width=`${(idx/deck.length)*100}%`;
   el('question').textContent=`${q.number}. ${q.question}${q.special65?' *':''}`;
   el('feedback').className='feedback'; el('feedback').innerHTML=''; el('nextBtn').classList.add('hidden'); el('revealBtn').classList.remove('hidden');
   if(mode==='flash'){ el('answers').innerHTML=''; el('typed').classList.add('hidden'); el('checkBtn').classList.add('hidden'); }
   else { el('typed').classList.remove('hidden'); el('typed').value=''; el('checkBtn').classList.remove('hidden'); renderChoices(q); }
+  resetVoiceUI();
+  const voiceable = mode!=='flash' && speechOK;
+  el('micBtn').classList.toggle('hidden', !voiceable);
+  el('voiceBar').classList.toggle('hidden', mode==='flash');
   speak(q.question);
+  if(voiceable && handsFree) whenSpeechDone(()=>{ if(!answered && idx===thisIdx) startListening(); });
 }
 function renderChoices(q){
   let correct=q.answers[0];
@@ -1477,31 +1505,189 @@ function renderChoices(q){
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function pickAnswer(btn, choice){ if(answered) return; let ok=isCorrect(choice, deck[idx].answers); finalize(ok); markButtons(choice); }
 function markButtons(choice){ document.querySelectorAll('.answer').forEach(b=>{ if(isCorrect(b.textContent, deck[idx].answers)) b.classList.add('correct'); else if(b.textContent===choice) b.classList.add('wrong'); }); }
-function isCorrect(input, answers){ let u=clean(input); return answers.some(a=>{let c=clean(a); return u===c || u.includes(c) || c.includes(u) && u.length>=Math.max(3,Math.floor(c.length*.55)); }); }
+// USCIS answer keys use parentheses to mark OPTIONAL words, so "(U.S.) Constitution"
+// accepts both "U.S. Constitution" and plain "Constitution". Expand each answer into
+// both forms before matching.
+function variants(a){ return [...new Set([clean(String(a).replace(/[()]/g,' ')), clean(String(a).replace(/\([^)]*\)/g,' '))].filter(Boolean))]; }
+function isCorrect(input, answers){ let u=clean(input); return answers.some(a=>variants(a).some(c=> u===c || u.includes(c) || (c.includes(u) && u.length>=Math.max(3,Math.floor(c.length*.55))) )); }
 function checkTyped(){ if(answered) return; let v=el('typed').value.trim(); if(!v){ el('typed').focus(); return; } finalize(isCorrect(v, deck[idx].answers)); }
 function revealAnswer(){ if(answered && mode!=='flash') return; finalize(null); }
 function finalize(ok){
+  stopListening();
   answered=true; if(ok===true) score++;
   let q=deck[idx]; let cls=ok===true?'ok':ok===false?'no':'info'; let title=ok===true?'Correct.':ok===false?'Not quite.':'Answer:';
   el('feedback').className='feedback '+cls;
   el('feedback').innerHTML=`<strong>${title}</strong><ul class="answer-list">${q.answers.map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>`;
-  el('nextBtn').classList.remove('hidden'); el('revealBtn').classList.add('hidden');
+  el('nextBtn').classList.remove('hidden'); el('revealBtn').classList.add('hidden'); el('micBtn').classList.add('hidden');
+  const thisIdx=idx;
   speak((ok===true?'Correct. ':ok===false?'Not quite. ':'')+'Acceptable answers are: '+q.answers.join('; '));
+  if(handsFree) whenSpeechDone(()=>{ if(idx===thisIdx && answered) idx<deck.length-1 ? nextQuestion() : finish(); });
 }
 function nextQuestion(){ idx++; showQuestion(); }
 function finish(){
+  stopListening(); if('speechSynthesis' in window) speechSynthesis.cancel();
   el('bar').style.width='100%'; el('quiz').classList.add('hidden'); let pct=deck.length?Math.round(score/deck.length*100):0;
   let pass = mode==='exam' ? score>=12 : null;
   el('summary').className='panel';
   el('summary').innerHTML=`<h2>${mode==='exam'?(pass?'Passed practice test 🎉':'Practice test complete'):'Study session complete'}</h2><p style="font-size:1.25rem">Score: <strong>${score} / ${deck.length}</strong> (${pct}%)</p>${mode==='exam'?`<p>${pass?'You met the USCIS practice threshold of 12 correct out of 20.':'Keep practicing. USCIS requires 12 correct out of 20 on this version.'}</p>`:''}<div class="toolbar"><button class="btn primary" onclick="startMode('exam')">Try another exam</button><button class="btn success" onclick="startMode('all')">Study all 128</button><button class="btn gold" onclick="startMode('special')">65/20 practice</button></div>`;
 }
 function speakCurrent(){ if(deck[idx]) speak(deck[idx].question); }
-function speak(text){ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.95; speechSynthesis.speak(u); }
+function speak(text){ if(!('speechSynthesis' in window)) return; stopListening(); speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.95; speechSynthesis.speak(u); }
+
+/* ---------- Voice answering (Web Speech API) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const speechOK = !!SR;
+let recog=null, listening=false, handsFree=false, retried=false;
+
+// Wait until the browser has finished reading the question, so the mic
+// does not record our own text-to-speech voice.
+function whenSpeechDone(cb){
+  if(!('speechSynthesis' in window)) return cb();
+  let tries=0;
+  (function poll(){
+    if(!speechSynthesis.speaking || ++tries>250) return cb();
+    setTimeout(poll,100);
+  })();
+}
+
+function levenshtein(a,b){
+  if(a===b) return 0;
+  if(!a.length) return b.length; if(!b.length) return a.length;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    let cur=[i];
+    for(let j=1;j<=b.length;j++)
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[b.length];
+}
+function similarity(a,b){ const m=Math.max(a.length,b.length); return m?1-levenshtein(a,b)/m:1; }
+// Best phrase-level similarity between what was heard and any accepted answer.
+function bestMatch(heard, answers){
+  const u=clean(heard); let best={score:0, answer:answers[0]};
+  answers.forEach(a=>variants(a).forEach(c=>{
+    let s=similarity(u,c);
+    // also score the heard text against each window of words, so a rambling
+    // answer that contains a near-miss of the key phrase still registers
+    const uw=u.split(' '), cw=c.split(' ').length;
+    for(let i=0;i+cw<=uw.length;i++) s=Math.max(s, similarity(uw.slice(i,i+cw).join(' '), c));
+    if(s>best.score) best={score:s, answer:a};
+  }));
+  return best;
+}
+
+function resetVoiceUI(){
+  retried=false;
+  el('heard').classList.remove('show');
+  el('heardTxt').textContent='';
+  setMicState(false);
+}
+function setMicState(on){
+  listening=on;
+  const b=el('micBtn');
+  b.classList.toggle('listening', on);
+  b.textContent = on ? '🔴 Listening… click to stop' : '🎙️ Answer Out Loud';
+}
+function showHeard(text, interim, conf){
+  el('heard').classList.add('show');
+  const t=el('heardTxt');
+  t.className='txt'+(interim?' interim':'');
+  t.innerHTML = escapeHtml(text) + (!interim && conf!=null ? `<span class="conf">${Math.round(conf*100)}% clear</span>` : '');
+}
+
+function toggleListening(){ listening ? stopListening() : startListening(); }
+
+function startListening(){
+  if(!speechOK || listening || answered) return;
+  if(speechSynthesis && speechSynthesis.speaking) speechSynthesis.cancel();
+  try{
+    recog = new SR();
+    recog.lang='en-US'; recog.continuous=false; recog.interimResults=true; recog.maxAlternatives=3;
+    recog.onstart = ()=> setMicState(true);
+    recog.onresult = e=>{
+      let finalTxt='', conf=null, interim='', alts=[];
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const r=e.results[i];
+        if(r.isFinal){
+          finalTxt+=r[0].transcript; conf=r[0].confidence;
+          for(let k=0;k<r.length;k++) alts.push(r[k].transcript);
+        } else interim+=r[0].transcript;
+      }
+      if(interim && !finalTxt) showHeard(interim, true);
+      if(finalTxt.trim()){
+        showHeard(finalTxt.trim(), false, conf);
+        el('typed').value=finalTxt.trim();
+        gradeSpoken(finalTxt.trim(), alts);
+      }
+    };
+    recog.onerror = ev=> voiceError(ev.error);
+    recog.onend = ()=> setMicState(false);
+    recog.start();
+  }catch(err){ setMicState(false); voiceError('start-failed'); }
+}
+
+function stopListening(){
+  if(recog){ try{ recog.onend=null; recog.abort(); }catch(e){} }
+  setMicState(false);
+}
+
+function voiceError(code){
+  setMicState(false);
+  const msg = {
+    'not-allowed':'Microphone blocked. Click the 🔒 icon in your address bar and allow microphone access, then try again.',
+    'service-not-allowed':'Microphone blocked by your browser settings. Allow mic access for this site and try again.',
+    'no-speech':'I did not hear anything. Click the mic and speak your answer clearly.',
+    'audio-capture':'No microphone found. Plug one in or check your input device.',
+    'network':'Speech recognition needs an internet connection and could not reach the service.',
+    'aborted':null
+  }[code];
+  if(!msg) return;
+  el('heard').classList.add('show');
+  el('heardTxt').className='txt interim';
+  el('heardTxt').textContent=msg;
+  if(code==='not-allowed'||code==='service-not-allowed'){ handsFree=false; el('handsFree').checked=false; }
+}
+
+// Grade a spoken answer. Correct → normal flow. Otherwise decide whether it was
+// the WRONG answer or the RIGHT answer said unclearly, and coach accordingly.
+function gradeSpoken(transcript, alternatives){
+  if(answered) return;
+  const q=deck[idx];
+  const anyAlt=(alternatives&&alternatives.length?alternatives:[transcript]);
+  if(anyAlt.some(t=>isCorrect(t, q.answers))) return finalize(true);
+  const best=bestMatch(transcript, q.answers);
+  if(best.score>=0.62 && !retried){
+    retried=true;
+    el('feedback').className='feedback near';
+    el('feedback').innerHTML=`<strong>Close — say it again more clearly.</strong><p style="margin:8px 0 0">I heard <em>“${escapeHtml(transcript)}”</em>, which is close to <strong>${escapeHtml(best.answer)}</strong>. Slow down and pronounce each word.</p>`;
+    speak('Close. Say it again more clearly.');
+    if(handsFree) whenSpeechDone(()=>{ if(!answered) startListening(); });
+    return;
+  }
+  finalize(false);
+}
+
+function toggleHandsFree(){
+  handsFree = el('handsFree').checked;
+  if(handsFree && !answered && mode!=='flash') whenSpeechDone(startListening);
+  else if(!handsFree) stopListening();
+}
 function renderSearch(){
   const q=clean(el('search').value); let list=QUESTIONS.filter(item=>!q || clean(item.question+' '+item.answers.join(' ')).includes(q));
   el('searchResults').innerHTML=list.map(item=>`<article class="result"><h3>${item.number}. ${escapeHtml(item.question)}${item.special65?' *':''}</h3><ul class="answer-list">${item.answers.map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul></article>`).join('');
 }
 el('typed').addEventListener('keydown', e=>{ if(e.key==='Enter') checkTyped(); });
+
+// Firefox has no SpeechRecognition. Degrade to the typed flow instead of
+// showing a mic button that can never work.
+if(!speechOK){
+  el('micBtn').classList.add('hidden');
+  el('handsFree').disabled=true;
+  el('handsFree').closest('label').style.opacity='.5';
+  el('voiceNote').textContent='Voice answering needs Chrome, Edge, or Safari. In this browser, type your answer instead.';
+}
+window.addEventListener('beforeunload', stopListening);
 renderSearch();
 </script>
 </body>
