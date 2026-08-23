@@ -25,6 +25,7 @@
   ],
   "redirects": [
     { "source": "/CivisTest.html", "destination": "/", "permanent": true },
-    { "source": "/CivisTest", "destination": "/", "permanent": true }
+    { "source": "/CivisTest", "destination": "/", "permanent": true },
+    { "source": "/CivisTest/", "destination": "/", "permanent": true }
   ]
 }
