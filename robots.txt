@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://seanmichael67.github.io/CivicsTest/sitemap.xml
