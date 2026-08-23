@@ -82,7 +82,39 @@
     footer { text-align:center; color:var(--muted); padding:24px 18px 45px; }
     a { color:var(--blue); }
     @media (max-width:850px) { .hero { grid-template-columns:1fr; } .controls,.stats { grid-template-columns:1fr 1fr; } }
-    @media (max-width:560px) { header { padding-top:26px; } .controls,.stats,.search-grid { grid-template-columns:1fr; } .btn { width:100%; } }
+    @media (max-width:560px) { header { padding-top:26px; } .controls,.search-grid { grid-template-columns:1fr; } .stats { grid-template-columns:1fr 1fr; } }
+
+    /* ---------- Mobile study mode ----------
+       Phones are the main way people study, so once a quiz is running we strip
+       the page down to the question: hide the marketing header and the mode
+       picker, and pin the two actions that matter to the bottom of the screen
+       where a thumb can reach them. */
+    .btn { touch-action:manipulation; }
+    .actionbar { display:flex; gap:10px; margin-top:12px; }
+    .actionbar .btn { flex:1; }
+    .exit-quiz { display:none; align-items:center; gap:6px; background:none; border:0; color:var(--muted); font-weight:800; cursor:pointer; padding:4px 6px; }
+    @media (max-width:700px) {
+      body.quiz-active header,
+      body.quiz-active #modePanel,
+      body.quiz-active #searchPanel { display:none; }
+      body.quiz-active main { padding-top:12px; padding-bottom:104px; }
+      body.quiz-active .actionbar {
+        position:fixed; left:0; right:0; bottom:0; z-index:50; margin:0;
+        padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+        background:rgba(255,255,255,.97); backdrop-filter:blur(10px);
+        border-top:1px solid var(--line); box-shadow:0 -8px 24px rgba(15,23,42,.10);
+      }
+      body.quiz-active .actionbar .btn { padding:16px 12px; font-size:1.02rem; }
+      /* secondary actions: 2x2 grid instead of a 279px stack of full-width buttons */
+      .toolbar { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .toolbar .btn { width:100%; padding:12px 10px; font-size:.95rem; }
+      .answer { padding:12px 14px; }
+      .panel { padding:16px; border-radius:18px; }
+      .results { max-height:none; }
+      .voice-bar { gap:8px; }
+      .voice-note { font-size:.85rem; }
+      body.quiz-active .exit-quiz { display:inline-flex; }
+    }
   </style>
 </head>
 <body>
@@ -103,7 +135,7 @@
   </div>
 </header>
 <main class="wrap">
-  <section class="panel">
+  <section class="panel" id="modePanel">
     <div class="controls">
       <button class="btn primary" onclick="startMode('exam')">Start Exam Practice</button>
       <button class="btn success" onclick="startMode('all')">Study All 128</button>
@@ -120,6 +152,7 @@
 
   <section id="quiz" class="panel hidden">
     <div class="quiz-top">
+      <button class="exit-quiz" onclick="exitQuiz()" aria-label="Leave this quiz">← Exit</button>
       <span class="pill" id="modeLabel">Exam Practice</span>
       <div class="progress"><div class="bar" id="bar"></div></div>
       <span class="pill" id="counter">1 / 20</span>
@@ -133,19 +166,21 @@
     </div>
     <div id="heard" class="heard"><span class="lbl">I heard you say</span><div class="txt" id="heardTxt"></div></div>
     <div class="toolbar">
-      <button id="micBtn" class="btn mic" onclick="toggleListening()">🎙️ Answer Out Loud</button>
       <button id="checkBtn" class="btn primary" onclick="checkTyped()">Check Typed Answer</button>
       <button class="btn ghost" onclick="speakCurrent()">🔊 Read Question</button>
       <button id="revealBtn" class="btn secondary" onclick="revealAnswer()">Show Answer</button>
-      <button id="nextBtn" class="btn success hidden" onclick="nextQuestion()">Next</button>
       <button class="btn danger" onclick="finish()">Finish</button>
+    </div>
+    <div class="actionbar">
+      <button id="micBtn" class="btn mic" onclick="toggleListening()">🎙️ Answer Out Loud</button>
+      <button id="nextBtn" class="btn success hidden" onclick="nextQuestion()">Next</button>
     </div>
     <div id="feedback" class="feedback"></div>
   </section>
 
   <section id="summary" class="panel hidden"></section>
 
-  <section class="panel">
+  <section class="panel" id="searchPanel">
     <h2>Search all official questions</h2>
     <div class="search-grid">
       <input id="search" class="free-input" placeholder="Search question or answer..." oninput="renderSearch()">
@@ -1474,11 +1509,14 @@ function clean(s){return (s||'').toLowerCase().replace(/[()\[\].,;:!?“”’'"
 function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;}
 function startMode(m){
   mode=m; score=0; idx=0; answered=false; el('summary').classList.add('hidden'); el('quiz').classList.remove('hidden');
+  document.body.classList.add('quiz-active');
   if(m==='exam') deck=shuffle(QUESTIONS).slice(0,20);
   else if(m==='special') deck=shuffle(QUESTIONS.filter(q=>q.special65));
   else deck=shuffle(QUESTIONS);
   el('modeLabel').textContent = m==='exam'?'Exam Practice':m==='special'?'65/20 Practice':m==='flash'?'Flashcards':'Study All 128';
-  showQuestion(); window.scrollTo({top:document.querySelector('main').offsetTop, behavior:'smooth'});
+  showQuestion();
+  const top = Math.max(0, el('quiz').getBoundingClientRect().top + window.scrollY - 8);
+  window.scrollTo({top, behavior:'smooth'});
 }
 function showQuestion(){
   if(idx>=deck.length) return finish();
@@ -1494,7 +1532,7 @@ function showQuestion(){
   el('micBtn').classList.toggle('hidden', !voiceable);
   el('voiceBar').classList.toggle('hidden', mode==='flash');
   speak(q.question);
-  if(voiceable && handsFree) whenSpeechDone(()=>{ if(!answered && idx===thisIdx) startListening(); });
+  if(voiceable && handsFree && !isIOS) whenSpeechDone(()=>{ if(!answered && idx===thisIdx) startListening(); });
 }
 function renderChoices(q){
   let correct=q.answers[0];
@@ -1524,8 +1562,16 @@ function finalize(ok){
   if(handsFree) whenSpeechDone(()=>{ if(idx===thisIdx && answered) idx<deck.length-1 ? nextQuestion() : finish(); });
 }
 function nextQuestion(){ idx++; showQuestion(); }
+// Leave a quiz without finishing it: restore the full page on mobile.
+function exitQuiz(){
+  stopListening(); if('speechSynthesis' in window) speechSynthesis.cancel();
+  document.body.classList.remove('quiz-active');
+  el('quiz').classList.add('hidden'); el('summary').classList.add('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
 function finish(){
   stopListening(); if('speechSynthesis' in window) speechSynthesis.cancel();
+  document.body.classList.remove('quiz-active');
   el('bar').style.width='100%'; el('quiz').classList.add('hidden'); let pct=deck.length?Math.round(score/deck.length*100):0;
   let pass = mode==='exam' ? score>=12 : null;
   el('summary').className='panel';
@@ -1537,6 +1583,8 @@ function speak(text){ if(!('speechSynthesis' in window)) return; stopListening()
 /* ---------- Voice answering (Web Speech API) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const speechOK = !!SR;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 let recog=null, listening=false, handsFree=false, retried=false;
 
 // Wait until the browser has finished reading the question, so the mic
@@ -1662,7 +1710,7 @@ function gradeSpoken(transcript, alternatives){
     el('feedback').className='feedback near';
     el('feedback').innerHTML=`<strong>Close — say it again more clearly.</strong><p style="margin:8px 0 0">I heard <em>“${escapeHtml(transcript)}”</em>, which is close to <strong>${escapeHtml(best.answer)}</strong>. Slow down and pronounce each word.</p>`;
     speak('Close. Say it again more clearly.');
-    if(handsFree) whenSpeechDone(()=>{ if(!answered) startListening(); });
+    if(handsFree && !isIOS) whenSpeechDone(()=>{ if(!answered) startListening(); });
     return;
   }
   finalize(false);
@@ -1670,7 +1718,7 @@ function gradeSpoken(transcript, alternatives){
 
 function toggleHandsFree(){
   handsFree = el('handsFree').checked;
-  if(handsFree && !answered && mode!=='flash') whenSpeechDone(startListening);
+  if(handsFree && !answered && mode!=='flash' && !isIOS) whenSpeechDone(startListening);
   else if(!handsFree) stopListening();
 }
 function renderSearch(){
@@ -1686,6 +1734,10 @@ if(!speechOK){
   el('handsFree').disabled=true;
   el('handsFree').closest('label').style.opacity='.5';
   el('voiceNote').textContent='Voice answering needs Chrome, Edge, or Safari. In this browser, type your answer instead.';
+} else if(isIOS){
+  // iOS Safari requires a fresh user gesture for every recognition start, so the
+  // mic cannot legitimately reopen on its own between questions.
+  el('voiceNote').textContent='Question is read aloud, then tap the mic to answer. iPhone and iPad require a tap for each question.';
 }
 window.addEventListener('beforeunload', stopListening);
 renderSearch();
