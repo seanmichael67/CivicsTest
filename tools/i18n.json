@@ -78,7 +78,17 @@
     "mode_weak": "Practice weak questions",
     "label_weak": "Weak questions",
     "progress_reset": "Reset progress",
-    "sum_prev": "Previous best: {pct}%"
+    "sum_prev": "Previous best: {pct}%",
+    "onb_cta": "Start hands-free practice",
+    "onb_h": "Let's check your microphone",
+    "onb_allow": "Your browser will ask to use the microphone. Choose Allow.",
+    "onb_say": "Say anything out loud — \"hello\" is fine.",
+    "onb_ok": "Your microphone is working.",
+    "onb_fail": "I could not hear you. Check your microphone and try again.",
+    "onb_retry": "Try again",
+    "onb_skip": "Skip — I'll type instead",
+    "onb_begin": "Start practising",
+    "onb_note_ios": "On iPhone and iPad you tap the microphone once for each question."
   },
   "es": {
     "_name": "Español",
@@ -159,7 +169,17 @@
     "mode_weak": "Practicar mis preguntas difíciles",
     "label_weak": "Preguntas difíciles",
     "progress_reset": "Borrar progreso",
-    "sum_prev": "Mejor anterior: {pct}%"
+    "sum_prev": "Mejor anterior: {pct}%",
+    "onb_cta": "Comenzar práctica manos libres",
+    "onb_h": "Vamos a probar su micrófono",
+    "onb_allow": "Su navegador le pedirá permiso para usar el micrófono. Elija Permitir.",
+    "onb_say": "Diga algo en voz alta: «hola» sirve.",
+    "onb_ok": "Su micrófono funciona.",
+    "onb_fail": "No pude escucharle. Revise su micrófono e inténtelo de nuevo.",
+    "onb_retry": "Intentar de nuevo",
+    "onb_skip": "Omitir: prefiero escribir",
+    "onb_begin": "Empezar a practicar",
+    "onb_note_ios": "En iPhone y iPad toca el micrófono una vez por cada pregunta."
   },
   "zh": {
     "_name": "中文",
@@ -240,7 +260,17 @@
     "mode_weak": "练习我的薄弱题目",
     "label_weak": "薄弱题目",
     "progress_reset": "清除进度",
-    "sum_prev": "之前最佳：{pct}%"
+    "sum_prev": "之前最佳：{pct}%",
+    "onb_cta": "开始免提练习",
+    "onb_h": "先测试您的麦克风",
+    "onb_allow": "浏览器会请求使用麦克风，请选择「允许」。",
+    "onb_say": "请大声说点什么，说「你好」也可以。",
+    "onb_ok": "您的麦克风工作正常。",
+    "onb_fail": "我没有听到声音。请检查麦克风后重试。",
+    "onb_retry": "重试",
+    "onb_skip": "跳过，我要用打字",
+    "onb_begin": "开始练习",
+    "onb_note_ios": "在 iPhone 和 iPad 上，每道题需要点按一次麦克风。"
   },
   "vi": {
     "_name": "Tiếng Việt",
@@ -321,7 +351,17 @@
     "mode_weak": "Luyện các câu tôi hay sai",
     "label_weak": "Câu hay sai",
     "progress_reset": "Xóa tiến độ",
-    "sum_prev": "Tốt nhất trước đó: {pct}%"
+    "sum_prev": "Tốt nhất trước đó: {pct}%",
+    "onb_cta": "Bắt đầu luyện rảnh tay",
+    "onb_h": "Hãy kiểm tra micrô của bạn",
+    "onb_allow": "Trình duyệt sẽ xin quyền dùng micrô. Hãy chọn Cho phép.",
+    "onb_say": "Hãy nói to điều gì đó — nói “xin chào” cũng được.",
+    "onb_ok": "Micrô của bạn hoạt động tốt.",
+    "onb_fail": "Tôi không nghe thấy bạn. Hãy kiểm tra micrô và thử lại.",
+    "onb_retry": "Thử lại",
+    "onb_skip": "Bỏ qua — tôi sẽ gõ",
+    "onb_begin": "Bắt đầu luyện tập",
+    "onb_note_ios": "Trên iPhone và iPad, bạn chạm micrô một lần cho mỗi câu hỏi."
   },
   "tl": {
     "_name": "Tagalog",
@@ -402,7 +442,17 @@
     "mode_weak": "Sanayin ang mga mahihirap na tanong",
     "label_weak": "Mahihirap na tanong",
     "progress_reset": "I-reset ang progreso",
-    "sum_prev": "Dating pinakamataas: {pct}%"
+    "sum_prev": "Dating pinakamataas: {pct}%",
+    "onb_cta": "Simulan ang hands-free na pagsasanay",
+    "onb_h": "Subukan muna natin ang iyong mikropono",
+    "onb_allow": "Hihingi ng pahintulot ang browser para gamitin ang mikropono. Piliin ang Allow.",
+    "onb_say": "Magsalita nang malakas — puwedeng “hello” lang.",
+    "onb_ok": "Gumagana ang iyong mikropono.",
+    "onb_fail": "Hindi kita narinig. Suriin ang mikropono at subukan muli.",
+    "onb_retry": "Subukan muli",
+    "onb_skip": "Laktawan — magta-type na lang ako",
+    "onb_begin": "Simulan ang pagsasanay",
+    "onb_note_ios": "Sa iPhone at iPad, pindutin ang mikropono nang isang beses sa bawat tanong."
   },
   "ko": {
     "_name": "한국어",
@@ -483,7 +533,17 @@
     "mode_weak": "자주 틀리는 문제 연습",
     "label_weak": "약한 문제",
     "progress_reset": "학습 기록 지우기",
-    "sum_prev": "이전 최고: {pct}%"
+    "sum_prev": "이전 최고: {pct}%",
+    "onb_cta": "핸즈프리 연습 시작",
+    "onb_h": "먼저 마이크를 확인하겠습니다",
+    "onb_allow": "브라우저가 마이크 사용 권한을 묻습니다. 허용을 선택하세요.",
+    "onb_say": "아무 말이나 소리 내어 해보세요. “안녕하세요”도 좋습니다.",
+    "onb_ok": "마이크가 정상 작동합니다.",
+    "onb_fail": "소리를 듣지 못했습니다. 마이크를 확인하고 다시 시도하세요.",
+    "onb_retry": "다시 시도",
+    "onb_skip": "건너뛰기 — 입력하겠습니다",
+    "onb_begin": "연습 시작",
+    "onb_note_ios": "iPhone과 iPad에서는 문제마다 마이크를 한 번씩 눌러야 합니다."
   },
   "ht": {
     "_name": "Kreyòl Ayisyen",
@@ -564,7 +624,17 @@
     "mode_weak": "Pratike kesyon ki difisil pou mwen",
     "label_weak": "Kesyon difisil",
     "progress_reset": "Efase pwogrè",
-    "sum_prev": "Pi bon anvan: {pct}%"
+    "sum_prev": "Pi bon anvan: {pct}%",
+    "onb_cta": "Kòmanse pratik men lib",
+    "onb_h": "Ann tcheke mikwo ou",
+    "onb_allow": "Navigatè a ap mande pou l itilize mikwo a. Chwazi Allow (Otorize).",
+    "onb_say": "Di nenpòt bagay awotvwa — “bonjou” ase.",
+    "onb_ok": "Mikwo ou ap travay.",
+    "onb_fail": "Mwen pa t tande w. Tcheke mikwo ou epi eseye ankò.",
+    "onb_retry": "Eseye ankò",
+    "onb_skip": "Sote sa — m ap tape pito",
+    "onb_begin": "Kòmanse pratike",
+    "onb_note_ios": "Sou iPhone ak iPad ou peze mikwo a yon fwa pou chak kesyon."
   },
   "pt": {
     "_name": "Português",
@@ -645,7 +715,17 @@
     "mode_weak": "Praticar minhas perguntas difíceis",
     "label_weak": "Perguntas difíceis",
     "progress_reset": "Apagar progresso",
-    "sum_prev": "Melhor anterior: {pct}%"
+    "sum_prev": "Melhor anterior: {pct}%",
+    "onb_cta": "Começar prática mãos-livres",
+    "onb_h": "Vamos testar seu microfone",
+    "onb_allow": "Seu navegador vai pedir permissão para usar o microfone. Escolha Permitir.",
+    "onb_say": "Diga algo em voz alta — “olá” já serve.",
+    "onb_ok": "Seu microfone está funcionando.",
+    "onb_fail": "Não consegui ouvir você. Verifique o microfone e tente de novo.",
+    "onb_retry": "Tentar de novo",
+    "onb_skip": "Pular — prefiro digitar",
+    "onb_begin": "Começar a praticar",
+    "onb_note_ios": "No iPhone e no iPad você toca no microfone uma vez a cada pergunta."
   },
   "ar": {
     "_name": "العربية",
@@ -726,7 +806,17 @@
     "mode_weak": "تدرَّب على الأسئلة الصعبة",
     "label_weak": "الأسئلة الصعبة",
     "progress_reset": "مسح التقدُّم",
-    "sum_prev": "أفضل نتيجة سابقة: {pct}%"
+    "sum_prev": "أفضل نتيجة سابقة: {pct}%",
+    "onb_cta": "ابدأ التدريب بدون استخدام اليدين",
+    "onb_h": "لنتحقق من الميكروفون",
+    "onb_allow": "سيطلب المتصفح إذن استخدام الميكروفون. اختر «السماح».",
+    "onb_say": "قل أي شيء بصوت مسموع — «مرحبًا» تكفي.",
+    "onb_ok": "الميكروفون يعمل.",
+    "onb_fail": "لم أسمعك. تحقق من الميكروفون وحاول مرة أخرى.",
+    "onb_retry": "حاول مرة أخرى",
+    "onb_skip": "تخطَّ — سأكتب بدلًا من ذلك",
+    "onb_begin": "ابدأ التدريب",
+    "onb_note_ios": "على iPhone وiPad تضغط الميكروفون مرة واحدة لكل سؤال."
   },
   "ru": {
     "_name": "Русский",
@@ -807,7 +897,17 @@
     "mode_weak": "Отработать трудные вопросы",
     "label_weak": "Трудные вопросы",
     "progress_reset": "Сбросить прогресс",
-    "sum_prev": "Прежний лучший: {pct}%"
+    "sum_prev": "Прежний лучший: {pct}%",
+    "onb_cta": "Начать практику без рук",
+    "onb_h": "Проверим ваш микрофон",
+    "onb_allow": "Браузер запросит доступ к микрофону. Выберите «Разрешить».",
+    "onb_say": "Скажите что-нибудь вслух — подойдёт и «привет».",
+    "onb_ok": "Микрофон работает.",
+    "onb_fail": "Я вас не услышал. Проверьте микрофон и попробуйте снова.",
+    "onb_retry": "Попробовать снова",
+    "onb_skip": "Пропустить — я буду печатать",
+    "onb_begin": "Начать тренировку",
+    "onb_note_ios": "На iPhone и iPad нужно нажимать микрофон для каждого вопроса."
   },
   "fr": {
     "_name": "Français",
@@ -888,6 +988,16 @@
     "mode_weak": "Travailler mes questions difficiles",
     "label_weak": "Questions difficiles",
     "progress_reset": "Effacer la progression",
-    "sum_prev": "Meilleur précédent : {pct}%"
+    "sum_prev": "Meilleur précédent : {pct}%",
+    "onb_cta": "Commencer la pratique mains libres",
+    "onb_h": "Vérifions votre micro",
+    "onb_allow": "Votre navigateur va demander l'accès au micro. Choisissez Autoriser.",
+    "onb_say": "Dites quelque chose à voix haute — « bonjour » suffit.",
+    "onb_ok": "Votre micro fonctionne.",
+    "onb_fail": "Je ne vous ai pas entendu. Vérifiez votre micro et réessayez.",
+    "onb_retry": "Réessayer",
+    "onb_skip": "Passer — je préfère taper",
+    "onb_begin": "Commencer à pratiquer",
+    "onb_note_ios": "Sur iPhone et iPad, vous touchez le micro une fois par question."
   }
 }
