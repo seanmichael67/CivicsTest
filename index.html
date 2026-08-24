@@ -1695,13 +1695,22 @@ function initLang() {
   const sel = el('langSelect');
   sel.innerHTML = Object.keys(I18N)
     .map(c => `<option value="${c}">${I18N[c]._name}</option>`).join('');
+  // ?lang=es wins over everything else. Someone who clicked a Spanish-language
+  // ad must not land on an English page because their handset is set to
+  // English -- which is common, since the phone and the person often disagree.
+  // Accepts region tags too, so ?lang=es-MX and ?lang=pt-BR both work.
+  let forced = null;
+  try {
+    const raw = new URLSearchParams(location.search).get('lang');
+    if (raw) { const code = String(raw).toLowerCase().split('-')[0]; if (I18N[code]) forced = code; }
+  } catch (e) {}
   let saved = null;
   try { saved = localStorage.getItem('civicsLang'); } catch (e) {}
   // fall back to the browser's language before defaulting to English
   const guess = (navigator.languages || [navigator.language || 'en'])
     .map(l => String(l).toLowerCase().split('-')[0])
     .find(l => I18N[l]);
-  setLang(saved || guess || 'en');
+  setLang(forced || saved || guess || 'en');
 }
 
 /* ---------- Progress ----------
