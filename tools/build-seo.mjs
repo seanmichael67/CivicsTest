@@ -17,6 +17,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = (process.argv[2] || 'https://seanmichael67.github.io/CivicsTest').replace(/\/+$/, '');
+
+// og:image has to be absolute -- relative paths are ignored by every scraper --
+// so it derives from BASE like the canonicals do, and switching hosts stays a
+// single re-run rather than a hunt through hand-edited tags.
+const OG_IMAGE = `${BASE}/assets/brand/og-1200x630.png`;
 const TODAY = process.env.BUILD_DATE || new Date().toISOString().slice(0, 10);
 
 /* ---------- read the questions straight out of the app ---------- */
@@ -118,7 +123,11 @@ function page({ title, description, canonical, body, ld, up }) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${canonical}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="${OG_IMAGE}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_IMAGE}">
 <link rel="stylesheet" href="${up}assets/q.css">
 ${ld ? `<script type="application/ld+json">${ld}</script>` : ''}
 ${ANALYTICS}
@@ -271,15 +280,33 @@ if (/<link rel="canonical"/.test(appOut)) {
 }
 appOut = appOut.replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${BASE}/">`);
 
+// Same replace-or-insert shape as the canonical above: rewrite the tag if a
+// previous run wrote one, otherwise hang it off og:url. Without this the app
+// itself -- the page every ad actually lands on -- shares with no preview card.
+const appOgImage = `<meta property="og:image" content="${OG_IMAGE}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${OG_IMAGE}">`;
+if (/<meta property="og:image"/.test(appOut)) {
+  appOut = appOut
+    .replace(/<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${OG_IMAGE}">`)
+    .replace(/<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${OG_IMAGE}">`);
+} else {
+  appOut = appOut.replace(/(<meta property="og:url" content="[^"]*">)/, `$1\n  ${appOgImage}`);
+}
+
 appOut = appOut.replace(/\n?\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/, '');
 appOut = appOut.replace(/\n?\s*<script defer src="\/_vercel\/insights\/script\.js"><\/script>/, '');
 appOut = appOut.replace(/(<meta name="theme-color"[^>]*>)/,
   `$1\n  <script type="application/ld+json">${appLd}</script>\n  ${ANALYTICS}`);
 
+// Only index.html. This used to mirror every build into CivisTest.html as well,
+// which is why deleting that file never stuck -- the next build put it back.
+// The misspelled URL stays alive through the vercel.json redirects, not a file.
 if (appOut !== app) {
   fs.writeFileSync(path.join(ROOT, 'index.html'), appOut);
-  fs.writeFileSync(path.join(ROOT, 'CivisTest.html'), appOut);
-  console.log('app        canonical, og:url and JSON-LD synced in index.html + CivisTest.html');
+  console.log('app        canonical, og:url and JSON-LD synced in index.html');
 }
 
 console.log(`base       ${BASE}`);
