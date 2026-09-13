@@ -1936,7 +1936,11 @@ function renderChoices(q){
   let correct=q.answers[0];
   let pool=QUESTIONS.filter(x=>x.number!==q.number).map(x=>x.answers[0]).filter(Boolean);
   let choices=shuffle([correct,...shuffle(pool).slice(0,3)]);
-  el('answers').innerHTML=choices.map(c=>`<button class="answer" onclick="pickAnswer(this, ${JSON.stringify(c)})">${escapeHtml(c)}</button>`).join('');
+  // Build the buttons through the DOM. An inline onclick with JSON.stringify(c)
+  // put raw quotes inside a quoted attribute, which truncated every handler and
+  // left the multiple-choice buttons dead.
+  const box=el('answers'); box.textContent='';
+  choices.forEach(c=>{ const b=document.createElement('button'); b.className='answer'; b.type='button'; b.textContent=c; b.addEventListener('click',()=>pickAnswer(b,c)); box.appendChild(b); });
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function pickAnswer(btn, choice){ if(answered) return; let ok=isCorrect(choice, deck[idx].answers); finalize(ok); markButtons(choice); }
