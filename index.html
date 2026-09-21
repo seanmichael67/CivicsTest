@@ -491,7 +491,7 @@ const QUESTIONS = [
     "answers": [
       "So one part does not become too powerful",
       "Checks and balances",
-      "Separation of powers B: System of Government"
+      "Separation of powers"
     ],
     "special65": false
   },
@@ -925,7 +925,7 @@ const QUESTIONS = [
     "number": 62,
     "question": "What is the capital of your state?",
     "answers": [
-      "Answers will vary. [District of Columbia residents should answer that D.C. is not a state and does not have a capital. Residents of U.S. territories should name the capital of the territory.] C: Rights and Responsibilities"
+      "Answers will vary. [District of Columbia residents should answer that D.C. is not a state and does not have a capital. Residents of U.S. territories should name the capital of the territory.]"
     ],
     "special65": false
   },
@@ -1042,7 +1042,7 @@ const QUESTIONS = [
     "answers": [
       "Required by law",
       "Civic duty",
-      "Makes the draft fair, if needed AMERICAN HISTORY A: Colonial Period and Independence"
+      "Makes the draft fair, if needed"
     ],
     "special65": false
   },
@@ -1235,7 +1235,7 @@ const QUESTIONS = [
       "One of the writers of the Federalist Papers",
       "Helped establish the First Bank of the United States",
       "Aide to General George Washington",
-      "Member of the Continental Congress B: 1800s"
+      "Member of the Continental Congress"
     ],
     "special65": false
   },
@@ -1341,7 +1341,7 @@ const QUESTIONS = [
       "Sojourner Truth",
       "Harriet Tubman",
       "Lucretia Mott",
-      "Lucy Stone C: Recent American History and Other Important Historical Information"
+      "Lucy Stone"
     ],
     "special65": false
   },
@@ -1548,7 +1548,7 @@ const QUESTIONS = [
       "Airplane",
       "Assembly line",
       "Landing on the moon",
-      "Integrated circuit (IC) SYMBOLS AND HOLIDAYS A: Symbols"
+      "Integrated circuit (IC)"
     ],
     "special65": false
   },
@@ -1601,7 +1601,7 @@ const QUESTIONS = [
     "question": "The Nation’s first motto was “E Pluribus Unum.” What does that mean?",
     "answers": [
       "Out of many, one",
-      "We all become one B: Holidays"
+      "We all become one"
     ],
     "special65": false
   },
@@ -1732,6 +1732,14 @@ function loadProgress(){
     if (raw) {
       const p = JSON.parse(raw);
       if (p && typeof p === 'object') progress = { q: p.q || {}, sessions: p.sessions || [] };
+      // Records written before look-up questions became unscored would keep them
+      // pinned to "keep practising these" forever -- a drill nobody can win.
+      let dropped = false;
+      for (const n of Object.keys(progress.q)) {
+        const q = QUESTIONS.find(x => x.number === +n);
+        if (q && isLookup(q)) { delete progress.q[n]; dropped = true; }
+      }
+      if (dropped) saveProgress();
     }
   } catch (e) { /* private mode, corrupt JSON: carry on with an empty record */ }
 }
@@ -1902,14 +1910,24 @@ function demoVoice() {
 
 function clean(s){return (s||'').toLowerCase().replace(/[()\[\].,;:!?“”’'"\/]/g,'').replace(/\s+/g,' ').trim();}
 function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;}
+// Eight questions have no fixed answer: four name current officials (which change
+// with every election or appointment) and four depend on where the applicant lives.
+// USCIS ships instructional text in place of an answer for these, so a grader can
+// only ever call a correct answer wrong -- someone who correctly named their own
+// senator was told "Not quite." and then had that question pinned to the top of
+// "keep practising". Treat them as look-up questions: shown with the official
+// guidance, never scored, never marked wrong, never offered as a distractor.
+// Keyed off answers[0] (the field renderChoices treats as canonical) so that
+// appending a real answer later automatically returns the question to the pool.
+function isLookup(q){ return /^Answers will vary|uscis\.gov\/citizenship\/testupdates/i.test(q.answers[0]||''); }
 function startMode(m){
   mode=m; score=0; idx=0; answered=false; el('summary').classList.add('hidden'); el('quiz').classList.remove('hidden');
   document.body.classList.add('quiz-active');
-  if(m==='exam') deck=shuffle(QUESTIONS).slice(0,20);
+  if(m==='exam') deck=shuffle(QUESTIONS.filter(q=>!isLookup(q))).slice(0,20);
   else if(m==='weak') deck=shuffle(weakQuestions()).slice(0,20);
   // The real 65/20 exemption test asks TEN of the twenty starred questions,
   // not all twenty. Serving the whole list misrepresents the exam.
-  else if(m==='special') deck=shuffle(QUESTIONS.filter(q=>q.special65)).slice(0,10);
+  else if(m==='special') deck=shuffle(QUESTIONS.filter(q=>q.special65&&!isLookup(q))).slice(0,10);
   else deck=shuffle(QUESTIONS);
   el('modeLabel').textContent = t('label_'+m);
   showQuestion();
@@ -1933,24 +1951,25 @@ function showQuestion(){
   if(voiceable && handsFree && !isIOS) whenSpeechDone(()=>{ if(!answered && idx===thisIdx) startListening(); });
 }
 function renderChoices(q){
+  const box=el('answers'); box.textContent='';
+  if(isLookup(q)) return;
   let correct=q.answers[0];
-  let pool=QUESTIONS.filter(x=>x.number!==q.number).map(x=>x.answers[0]).filter(Boolean);
+  let pool=QUESTIONS.filter(x=>x.number!==q.number&&!isLookup(x)).map(x=>x.answers[0]).filter(Boolean);
   let choices=shuffle([correct,...shuffle(pool).slice(0,3)]);
   // Build the buttons through the DOM. An inline onclick with JSON.stringify(c)
   // put raw quotes inside a quoted attribute, which truncated every handler and
   // left the multiple-choice buttons dead.
-  const box=el('answers'); box.textContent='';
   choices.forEach(c=>{ const b=document.createElement('button'); b.className='answer'; b.type='button'; b.textContent=c; b.addEventListener('click',()=>pickAnswer(b,c)); box.appendChild(b); });
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function pickAnswer(btn, choice){ if(answered) return; let ok=isCorrect(choice, deck[idx].answers); finalize(ok); markButtons(choice); }
+function pickAnswer(btn, choice){ if(answered) return; if(isLookup(deck[idx])) return finalize(null); let ok=isCorrect(choice, deck[idx].answers); finalize(ok); markButtons(choice); }
 function markButtons(choice){ document.querySelectorAll('.answer').forEach(b=>{ if(isCorrect(b.textContent, deck[idx].answers)) b.classList.add('correct'); else if(b.textContent===choice) b.classList.add('wrong'); }); }
 // USCIS answer keys use parentheses to mark OPTIONAL words, so "(U.S.) Constitution"
 // accepts both "U.S. Constitution" and plain "Constitution". Expand each answer into
 // both forms before matching.
 function variants(a){ return [...new Set([clean(String(a).replace(/[()]/g,' ')), clean(String(a).replace(/\([^)]*\)/g,' '))].filter(Boolean))]; }
 function isCorrect(input, answers){ let u=clean(input); return answers.some(a=>variants(a).some(c=> u===c || u.includes(c) || (c.includes(u) && u.length>=Math.max(3,Math.floor(c.length*.55))) )); }
-function checkTyped(){ if(answered) return; let v=el('typed').value.trim(); if(!v){ el('typed').focus(); return; } finalize(isCorrect(v, deck[idx].answers)); }
+function checkTyped(){ if(answered) return; let v=el('typed').value.trim(); if(!v){ el('typed').focus(); return; } finalize(isLookup(deck[idx]) ? null : isCorrect(v, deck[idx].answers)); }
 function revealAnswer(){ if(answered && mode!=='flash') return; finalize(null); }
 function finalize(ok){
   stopListening();
@@ -2119,6 +2138,9 @@ function voiceError(code){
 function gradeSpoken(transcript, alternatives){
   if(answered) return;
   const q=deck[idx];
+  // Never coach a spoken answer against instructional text -- "Close, say it
+  // again more clearly" measured against "Visit uscis.gov/..." is nonsense.
+  if(isLookup(q)) return finalize(null);
   const anyAlt=(alternatives&&alternatives.length?alternatives:[transcript]);
   if(anyAlt.some(t=>isCorrect(t, q.answers))) return finalize(true);
   const best=bestMatch(transcript, q.answers);
