@@ -85,6 +85,12 @@ const scripts = [...QUESTIONS].sort((a, b) => a.number - b.number).map(q => {
     more_answers_accepted: !isLookup(q) && q.answers.length > on_screen.length,
     // 4. end card
     end_card: CTA,
+    // The whole voice-over, recorded as ONE take and cut apart afterwards by
+    // tools/make-quiz-video.py. Recording the short lines separately made the
+    // cloned voice babble extra words in front of them; one longer take is clean.
+    // The three fixed sentences are the cut points, so do not reword them here
+    // without changing ANCHORS in make-quiz-video.py too.
+    narration: `Question ${q.number}. ${q.question} Say your answer out loud. ${say_answer} Practice more questions out loud, free, at the link below.`,
     // for the YouTube upload form
     youtube_title: `${q.question} | USCIS Civics Test 2025 Question ${q.number}`.slice(0, 100),
     youtube_description: [
