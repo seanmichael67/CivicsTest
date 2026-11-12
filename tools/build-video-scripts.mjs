@@ -58,7 +58,9 @@ const scripts = [...QUESTIONS].sort((a, b) => a.number - b.number).map(q => {
   const url = `${BASE}/questions/${slugs.get(q.number)}/`;
   let say_answer, on_screen;
   if (isOfficial(q)) {
-    say_answer = 'This answer changes after elections and appointments. Check the current name at uscis.gov before your interview.';
+    // "U.S.C.I.S. website", not "uscis.gov": a text-to-speech voice reads the
+    // bare domain as one garbled word. The card below still shows the address.
+    say_answer = 'This answer changes after elections and appointments. Check the current name on the U.S.C.I.S. website before your interview.';
     on_screen = ['This answer changes', 'Check uscis.gov/citizenship/testupdates'];
   } else if (isLookup(q)) {
     say_answer = 'This answer depends on where you live. Look up yours before your interview.';
