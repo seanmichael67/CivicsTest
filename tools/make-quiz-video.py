@@ -19,7 +19,7 @@ Two steps, because the tutor clip has to lip-sync to the first part of the audio
 
 Needs ffmpeg, Pillow and faster-whisper (all preinstalled in the Higgsfield sandbox).
 """
-import argparse, json, math, os, re, subprocess, sys, tempfile
+import argparse, json, math, os, re, shutil, subprocess, sys, tempfile
 
 W, H, FPS = 1080, 1920, 30
 NAVY, BLUE, GOLD, SOFT, WHITE, MUTED = '#0f172a', '#1d4ed8', '#f59e0b', '#eff6ff', '#ffffff', '#cbd5e1'
@@ -185,24 +185,32 @@ def pause_card(frame, s, path, count=None):
 
 
 def answer_card(s, path):
-    from PIL import ImageDraw
+    from PIL import Image, ImageDraw
     img = background()
     d = ImageDraw.Draw(img)
-    y = pill(d, f'Question {s["number"]} of 128', 150) + 60
-    fnt, lines = fit(d, s['say_question'], W - 180, 5, (52, 46, 42, 38, 34), bold=False)
-    y = block(d, lines, fnt, y, WHITE) + 50
+    pill(d, f'Question {s["number"]} of 128', 150)
+    # The question and answers are drawn on their own layer first, then placed
+    # in the middle of the free space, so one short answer does not leave the
+    # card top-heavy and five long ones still fit.
+    layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    d2 = ImageDraw.Draw(layer)
+    fnt, lines = fit(d2, s['say_question'], W - 180, 5, (52, 46, 42, 38, 34), bold=False)
+    y = block(d2, lines, fnt, 0, WHITE) + 60
     label = 'CHECK YOUR OWN ANSWER' if s['needs_lookup'] else ('ACCEPTED ANSWERS' if len(s['on_screen_answers']) > 1 else 'ANSWER')
-    y = block(d, [label], font(44), y, GOLD) + 26
+    y = block(d2, [label], font(44), y, GOLD) + 26
     answers = s['on_screen_answers'][:5]
     size_opts = (72, 62, 54, 46, 40) if len(answers) <= 2 else (54, 48, 42, 38, 34)
     for a in answers:
-        fnt, lines = fit(d, a, W - 260, 3, size_opts)
+        fnt, lines = fit(d2, a, W - 260, 3, size_opts)
         h = int(len(lines) * fnt.size * 1.22) + 60
-        d.rounded_rectangle((90, y, W - 90, y + h), radius=34, fill=SOFT)
-        block(d, lines, fnt, y + 30, NAVY)
+        d2.rounded_rectangle((90, y, W - 90, y + h), radius=34, fill=SOFT)
+        block(d2, lines, fnt, y + 30, NAVY)
         y += h + 22
     if s.get('more_answers_accepted'):
-        block(d, ['More answers are accepted.', 'See them all at the link.'], font(36, bold=False), y + 14, MUTED)
+        y = block(d2, ['More answers are accepted.', 'See them all at the link.'], font(36, bold=False), y + 14, MUTED)
+    top, bottom = 290, H - 380  # below the pill, above the footer and the Shorts buttons
+    offset = top + max(0, (bottom - top - y) // 2)
+    img.paste(layer, (0, offset), layer)
     footer(d)
     img.save(path)
 
@@ -292,7 +300,7 @@ def cmd_assemble(a):
         if a.keep_cards:
             os.makedirs(a.keep_cards, exist_ok=True)
             for n in ('ov.png', 'p.png', 'c3.png', 'ans.png', 'end.png'):
-                os.replace(f(n), os.path.join(a.keep_cards, n))
+                shutil.copyfile(f(n), os.path.join(a.keep_cards, n))  # tmp may be another disk
     print(json.dumps({'out': a.out, 'seconds': round(duration(a.out), 2), 'heard': cp['heard']}, indent=2))
 
 
