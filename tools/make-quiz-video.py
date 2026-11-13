@@ -68,7 +68,10 @@ def cut_points(narration):
     mid = lambda i: (words[i - 1][2] + words[i][1]) / 2  # middle of the silence before word i
     return {
         'question_end': words[i_pause - 1][2], 'pause_start': words[i_pause][1],
-        'pause_end': words[i_answer - 1][2] + 0.35,
+        # Never past answer_start: with a short breath before the answer, the
+        # prompt card would otherwise play the answer's first sound, and the
+        # answer card would then play it again after the countdown.
+        'pause_end': min(words[i_answer - 1][2] + 0.35, mid(i_answer)),
         'answer_start': mid(i_answer), 'answer_end': mid(i_end),
         'end_start': mid(i_end), 'end_end': words[-1][2] + 0.8,
         'heard': heard,
@@ -256,6 +259,12 @@ def cmd_cut(a):
     secs = math.ceil(cp['question_end'] + 0.3)
     if secs > cp['pause_start']:
         secs = math.floor(cp['pause_start'])
+    if secs < cp['question_end']:
+        # No whole second falls in the silence after the question, so any clip
+        # length would either cut her off or run into the next sentence.
+        sys.exit(f'The pause after the question is too short to cut on a whole second (question ends at '
+                 f'{cp["question_end"]:.2f}s, "Say your answer" starts at {cp["pause_start"]:.2f}s). '
+                 f'Record the narration again; it usually comes out with a longer pause.')
     out = a.out or f'q{a.number:03d}_question.mp3'
     run('ffmpeg', '-y', '-i', a.narration, '-t', f'{secs}', '-af', f'afade=t=out:st={secs - 0.15}:d=0.15',
         '-ar', '24000', '-b:a', '128k', out)
