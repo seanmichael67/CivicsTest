@@ -44,3 +44,14 @@
   `videos/civics-speak-listen-reel/**` — `STORYBOARD.md`, `SCRIPT.md`,
   `compositions/frames/*.html` (+ `.es.html` masters), and
   `tools/{ad-strings.json, make-variant.mjs, autofit.mjs, build-all.sh}`.
+
+## Update 2026-11-13 — quiz videos
+
+- **New:** one quiz video per question, hosted on YouTube and embedded on the question
+  pages. Recipe, tutor avatar asset IDs and costs are in `videos/PRODUCTION.md`.
+- **Where it stopped:** 1 of 128 videos made (question 2). Higgsfield credits ran out;
+  narration for questions 126 and 30 is recorded and waiting for tutor clips.
+- **Next step:** Sean uploads the question-2 video to YouTube, puts its ID in
+  `tools/videos.json`, and re-runs `node tools/build-seo.mjs https://www.uscis128civicstest.com`.
+- **Monetization direction:** still one-time (~$19), now sold through a hosted payment
+  link (no accounts) with the free videos as the funnel. Not built yet.
