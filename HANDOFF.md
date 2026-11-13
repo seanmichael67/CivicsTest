@@ -92,3 +92,18 @@
   and the 11-language `I18N` object all inline. Then `tools/build-seo.mjs`, `tools/i18n.json`,
   `vercel.json`, `sitemap.xml` (130 URLs), `robots.txt`, `assets/q.css`, and `questions/**`
   (129 generated files — 128 question pages plus the hub).
+
+## Update 2026-11-13 — quiz videos (from the #3 session)
+
+- **#3 has stopped pushing** apart from review fixes, and is the one to merge; #4 can be
+  closed. The `.pyc` is untracked and `__pycache__/` is now in `.gitignore` on #3.
+- **The assembler has been run end-to-end**, in the Higgsfield sandbox (ffmpeg, Pillow,
+  faster-whisper): question 2 was cut, assembled and checked frame by frame. 1 of 128 videos
+  exists. Production stopped because Higgsfield credits ran out, not because of a defect.
+- **Recipe, avatar assets and costs** are in `videos/PRODUCTION.md` (kept out of the Vercel
+  deployment by `.vercelignore`). Budget roughly 5,500 credits for all 128.
+- **Publishing order stands as written above:** renew the domain first, then upload to
+  YouTube, then add the ID to `tools/videos.json` and re-run
+  `node tools/build-seo.mjs https://www.uscis128civicstest.com`.
+- **Monetization direction:** still one-time (~$19); proposed delivery is a hosted payment
+  link (no accounts) with the free videos as the funnel. Not built; analytics still unread.

@@ -1,0 +1,4 @@
+{
+  "_help": "One entry per published video. Key = question number. youtube = the 11 characters after watch?v= (or after /shorts/). uploaded = the day you published it. seconds = video length. Then run: node tools/build-seo.mjs https://www.uscis128civicstest.com",
+  "_example": { "youtube": "AAAAAAAAAAA", "uploaded": "2026-11-20", "seconds": 18 }
+}

@@ -31,6 +31,25 @@ if (!match) throw new Error('Could not find QUESTIONS array in index.html');
 const QUESTIONS = JSON.parse(match[1].replace(/;\s*$/, ''));
 if (QUESTIONS.length !== 128) throw new Error(`Expected 128 questions, got ${QUESTIONS.length}`);
 
+/* ---------- quiz videos ----------
+   tools/videos.json maps a question number to its published YouTube video:
+     { "2": { "youtube": "dQw4w9WgXcQ", "uploaded": "2026-11-20", "seconds": 18 } }
+   A question with no entry simply gets no video card, so the file can fill up
+   one video at a time. Entries are validated here because a typo'd ID would
+   otherwise ship as a broken player on a live page. */
+const VIDEOS_PATH = path.join(ROOT, 'tools/videos.json');
+const VIDEOS = new Map();
+if (fs.existsSync(VIDEOS_PATH)) {
+  for (const [num, v] of Object.entries(JSON.parse(fs.readFileSync(VIDEOS_PATH, 'utf8')))) {
+    if (num.startsWith('_')) continue; // "_help" style notes
+    if (!QUESTIONS.some(q => String(q.number) === num)) throw new Error(`videos.json: "${num}" is not a question number`);
+    if (!/^[\w-]{11}$/.test(v.youtube || '')) throw new Error(`videos.json: question ${num} needs an 11-character "youtube" ID`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v.uploaded || '')) throw new Error(`videos.json: question ${num} needs "uploaded" as YYYY-MM-DD`);
+    if (v.seconds != null && !(Number.isInteger(v.seconds) && v.seconds > 0)) throw new Error(`videos.json: question ${num} "seconds" must be a whole number`);
+    VIDEOS.set(Number(num), v);
+  }
+}
+
 /* ---------- helpers ---------- */
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonEsc = s => JSON.stringify(String(s));
@@ -110,7 +129,7 @@ footer a{color:var(--blue)}
 /* Canonical/og/JSON-LD URLs must be absolute. Everything the browser actually
    fetches stays relative, so the pages work under a subdirectory (GitHub
    Pages), at a domain root (Vercel), or straight off the filesystem. */
-function page({ title, description, canonical, body, ld, up }) {
+function page({ title, description, canonical, body, ld, up, head = '' }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,7 +149,7 @@ function page({ title, description, canonical, body, ld, up }) {
 <meta name="twitter:image" content="${OG_IMAGE}">
 <link rel="stylesheet" href="${up}assets/q.css">
 ${ld ? `<script type="application/ld+json">${ld}</script>` : ''}
-${ANALYTICS}
+${ANALYTICS}${head}
 </head>
 <body>
 <header><div class="wrap"><a href="${up}">&larr; USCIS 128 Civics Test practice</a></div></header>
@@ -142,6 +161,52 @@ ${body}
 </footer>
 </body>
 </html>`;
+}
+
+/* ---------- video card ----------
+   The player is a plain link wrapped round the thumbnail; the YouTube iframe is
+   only created on tap. That keeps ~1 MB of player script off the page for the
+   visitors who never press play (Core Web Vitals), and with JavaScript off the
+   link still opens the video on YouTube.
+
+   Styles are inlined on the pages that need them rather than added to q.css:
+   vercel.json serves /assets/ as immutable for a year, so returning visitors
+   would keep the old stylesheet and see an unstyled player. */
+const VIDEO_CSS = `<style>.yt{position:relative;display:block;width:100%;max-width:300px;aspect-ratio:9/16;margin:0 auto;border-radius:16px;overflow:hidden;background:#0f172a}
+.yt img,.yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}
+.yt span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(15,23,42,.82);color:#fff;font-weight:800;border-radius:999px;padding:12px 20px;white-space:nowrap}
+.yt:hover span,.yt:focus span{background:#1d4ed8}</style>`;
+
+const VIDEO_JS = `<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a.yt');if(!a)return;e.preventDefault();var f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+a.dataset.yt+'?autoplay=1&rel=0&playsinline=1';f.title=a.dataset.title;f.allow='autoplay; encrypted-media; picture-in-picture';f.allowFullscreen=true;var d=document.createElement('div');d.className='yt';d.appendChild(f);a.replaceWith(d);});</script>`;
+
+const videoName = q => `USCIS civics test question ${q.number}: ${q.question}`;
+const videoThumb = v => `https://i.ytimg.com/vi/${v.youtube}/hqdefault.jpg`;
+
+function videoCard(q) {
+  const v = VIDEOS.get(q.number);
+  if (!v) return '';
+  return `<div class="card">
+  <h2>Watch: hear this question asked out loud</h2>
+  <p>Listen to the question the way an officer asks it, say your answer before the countdown ends, then check it.</p>
+  <a class="yt" href="https://www.youtube.com/watch?v=${v.youtube}" data-yt="${v.youtube}" data-title="${esc(videoName(q))}" rel="noopener"><img src="${videoThumb(v)}" alt="Video: ${esc(q.question)}" width="480" height="360" loading="lazy"><span>&#9654; Play video</span></a>
+</div>
+${VIDEO_JS}`;
+}
+
+function videoLd(q) {
+  const v = VIDEOS.get(q.number);
+  if (!v) return [];
+  return [{
+    '@type': 'VideoObject',
+    name: videoName(q),
+    description: `A tutor asks official USCIS 2025 civics test question ${q.number} out loud, pauses for your spoken answer, then shows the accepted answer.`,
+    thumbnailUrl: videoThumb(v),
+    uploadDate: v.uploaded,
+    ...(v.seconds ? { duration: `PT${v.seconds}S` } : {}),
+    embedUrl: `https://www.youtube-nocookie.com/embed/${v.youtube}`,
+    contentUrl: `https://www.youtube.com/watch?v=${v.youtube}`,
+    inLanguage: 'en-US'
+  }];
 }
 
 /* ---------- write files ---------- */
@@ -173,7 +238,8 @@ sorted.forEach((q, i) => {
           { '@type': 'ListItem', position: 2, name: 'All 128 questions', item: `${BASE}/questions/` },
           { '@type': 'ListItem', position: 3, name: q.question, item: urlFor(q) }
         ]
-      }
+      },
+      ...videoLd(q)
     ]
   });
 
@@ -188,7 +254,7 @@ sorted.forEach((q, i) => {
   ${q.special65 ? '<p>This question is on the <strong>65/20 list</strong>: applicants who are 65 or older and have been a lawful permanent resident for at least 20 years study only these 20 starred questions, and may take the test in their language of choice.</p>' : ''}
   ${isVolatile(q) ? '<div class="warn"><strong>This answer changes.</strong> It depends on who currently holds the office or on where you live, so it is not fixed like the historical questions. Verify the current answer at uscis.gov before your interview.</div>' : ''}
 </article>
-<div class="card">
+${videoCard(q)}<div class="card">
   <h2>Practice saying this out loud</h2>
   <p>The civics test is administered orally &mdash; an officer reads a question and you answer by speaking. Practising by tapping multiple-choice buttons trains the wrong skill.</p>
   <p><a class="cta" href="../../">Practise with voice answering &rarr;</a></p>
@@ -208,7 +274,8 @@ sorted.forEach((q, i) => {
     title: `${q.question} | USCIS Civics Test Answer`,
     description: `Official USCIS 2025 civics test question ${q.number}. Accepted answer: ${answerLine(q)}. Practise saying it out loud before your naturalization interview.`,
     canonical: urlFor(q),
-    body, ld, up: '../../'
+    body, ld, up: '../../',
+    head: VIDEOS.has(q.number) ? `\n${VIDEO_CSS}` : ''
   }));
 });
 
@@ -235,7 +302,7 @@ fs.writeFileSync(path.join(ROOT, 'questions', 'index.html'), page({
   <p><a class="cta" href="../">Practise with voice answering &rarr;</a></p>
 </div>
 <div class="card">
-  <ul class="qlist">${sorted.map(q => `<li><a href="${slugs.get(q.number)}/">${q.number}. ${esc(q.question)}${q.special65 ? ' &starf;' : ''}</a></li>`).join('')}</ul>
+  <ul class="qlist">${sorted.map(q => `<li><a href="${slugs.get(q.number)}/">${q.number}. ${esc(q.question)}${q.special65 ? ' &starf;' : ''}${VIDEOS.has(q.number) ? ' <span title="Has a video">&#9654;</span>' : ''}</a></li>`).join('')}</ul>
 </div>`
 }));
 
@@ -312,4 +379,5 @@ if (appOut !== app) {
 console.log(`base       ${BASE}`);
 console.log(`questions  ${sorted.length} pages`);
 console.log(`volatile   ${sorted.filter(isVolatile).length} pages carry a freshness warning`);
+console.log(`videos     ${VIDEOS.size} of ${sorted.length} questions have a video`);
 console.log(`sitemap    ${urls.length} urls`);
